@@ -8,7 +8,7 @@ This plugin generates Kubernetes Service Accounts.
 ## Quick Links
 
 - Vault Website: [https://www.vaultproject.io]
-- Kubernetes Auth Docs: [https://www.vaultproject.io/docs/auth/kubernetes.html]
+- Kubernetes Secrets Docs: [https://www.vaultproject.io/docs/secrets/kubernetes.html]
 - Main Project Github: [https://www.github.com/hashicorp/vault]
 
 ## Getting Started
@@ -40,7 +40,7 @@ $ vault secrets enable kubernetes
 Successfully enabled 'kubernetes' at 'kubernetes'!
 ```
 
-To see all the supported paths, see the [Kubernetes auth API docs](https://www.vaultproject.io/api-docs/secrets/kubernetes).
+To see all the supported paths, see the [Kubernetes secrets API docs](https://www.vaultproject.io/api-docs/secrets/kubernetes).
 
 ## Developing
 
@@ -78,7 +78,7 @@ Once the server is started, register the plugin in the Vault server's [plugin ca
 ```sh
 $ vault plugin register \
         -sha256=<expected SHA256 Hex value of the plugin binary> \
-        -command="vault-plugin-auth-kubernetes" \
+        -command="vault-plugin-secrets-kubernetes" \
         secrets kubernetes
 ...
 Success! Data written to: sys/plugins/catalog/kubernetes
@@ -88,12 +88,12 @@ Note you should generate a new sha256 checksum if you have made changes
 to the plugin. Example using openssl:
 
 ```sh
-openssl dgst -sha256 $GOPATH/vault-plugin-auth-kubernetes
+openssl dgst -sha256 $GOPATH/vault-plugin-secrets-kubernetes
 ...
-SHA256(.../go/bin/vault-plugin-auth-kubernetes)= 896c13c0f5305daed381952a128322e02bc28a57d0c862a78cbc2ea66e8c6fa1
+SHA256(.../go/bin/vault-plugin-secrets-kubernetes)= 896c13c0f5305daed381952a128322e02bc28a57d0c862a78cbc2ea66e8c6fa1
 ```
 
-Enable the auth plugin backend using the Kubernetes auth plugin:
+Enable the secrets plugin backend using the Kubernetes secrets plugin:
 
 ```sh
 $ vault secrets enable kubernetes
