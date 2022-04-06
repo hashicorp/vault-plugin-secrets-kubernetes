@@ -25,7 +25,7 @@ fmtcheck:
 
 .PHONY: fmt
 fmt:
-	gofmt -w .
+	gofumpt -l -w .
 
 .PHONY: setup-kind
 # create a kind cluster for running the acceptance tests locally
