@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		os.Setenv("VAULT_ADDR", "http://127.0.0.1:38200")
+		os.Setenv("VAULT_ADDR", "http://127.0.0.1:38300")
 		os.Setenv("VAULT_TOKEN", "root")
 		os.Setenv("KUBERNETES_JWT", out.String())
 		os.Exit(m.Run())
