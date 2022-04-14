@@ -93,7 +93,7 @@ func (b *backend) pathConfig() *framework.Path {
 
 // pathConfigWrite handles create and update commands to the config
 func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	if config, err := b.config(ctx, req.Storage); err != nil {
+	if config, err := getConfig(ctx, req.Storage); err != nil {
 		return nil, err
 	} else if config == nil {
 		return nil, nil
@@ -115,20 +115,29 @@ func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data
 }
 
 func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	host := data.Get("kubernetes_host").(string)
-	disableLocalJWT := data.Get("disable_local_ca_jwt").(bool)
-	caCert := data.Get("kubernetes_ca_cert").(string)
-	serviceAccountJWT := data.Get("service_account_jwt").(string)
-
-	if disableLocalJWT && caCert == "" {
-		return logical.ErrorResponse("kubernetes_ca_cert must be given when disable_local_ca_jwt is true"), nil
+	config, err := getConfig(ctx, req.Storage)
+	if err != nil {
+		return nil, err
+	}
+	if config == nil {
+		config = &kubeConfig{}
 	}
 
-	config := &kubeConfig{
-		Host:              host,
-		CACert:            caCert,
-		ServiceAccountJwt: serviceAccountJWT,
-		DisableLocalCAJwt: disableLocalJWT,
+	if host, ok := data.GetOk("kubernetes_host"); ok {
+		config.Host = host.(string)
+	}
+	if disableLocalJWT, ok := data.GetOk("disable_local_ca_jwt"); ok {
+		config.DisableLocalCAJwt = disableLocalJWT.(bool)
+	}
+	if caCert, ok := data.GetOk("kubernetes_ca_cert"); ok {
+		config.CACert = caCert.(string)
+	}
+	if serviceAccountJWT, ok := data.GetOk("service_account_jwt"); ok {
+		config.ServiceAccountJwt = serviceAccountJWT.(string)
+	}
+
+	if config.DisableLocalCAJwt && config.CACert == "" {
+		return logical.ErrorResponse("kubernetes_ca_cert must be given when disable_local_ca_jwt is true"), nil
 	}
 
 	entry, err := logical.StorageEntryJSON(configPath, config)
@@ -144,32 +153,16 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 }
 
 func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	return nil, nil
-}
-
-func (b *backend) config(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
-	entry, err := s.Get(ctx, configPath)
-	if err != nil {
+	if err := req.Storage.Delete(ctx, configPath); err != nil {
 		return nil, err
 	}
-
-	if entry == nil {
-		return nil, nil
-	}
-
-	config := new(kubeConfig)
-	if err := entry.DecodeJSON(&config); err != nil {
-		return nil, fmt.Errorf("error reading root configuration: %w", err)
-	}
-
-	// return the config, we are done
-	return config, nil
+	return nil, nil
 }
 
 // loadConfig fetches the kubeConfig from storage and sets any runtime defaults
 // for host, local token, and local CA certificate.
 func (b *backend) loadConfig(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
-	config, err := b.config(ctx, s)
+	config, err := getConfig(ctx, s)
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +201,25 @@ func (b *backend) loadConfig(ctx context.Context, s logical.Storage) (*kubeConfi
 		}
 	}
 
+	return config, nil
+}
+
+func getConfig(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
+	entry, err := s.Get(ctx, configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if entry == nil {
+		return nil, nil
+	}
+
+	config := new(kubeConfig)
+	if err := entry.DecodeJSON(&config); err != nil {
+		return nil, fmt.Errorf("error reading root configuration: %w", err)
+	}
+
+	// return the config, we are done
 	return config, nil
 }
 

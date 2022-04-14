@@ -57,6 +57,7 @@ func TestConfig(t *testing.T) {
 	path, umount := mountHelper(t, client)
 	defer umount()
 
+	// create
 	_, err = client.Logical().Write(path+"/config", map[string]interface{}{
 		"disable_local_ca_jwt": true,
 		"kubernetes_ca_cert":   "cert",
@@ -72,6 +73,28 @@ func TestConfig(t *testing.T) {
 		"kubernetes_ca_cert":   "cert",
 		"kubernetes_host":      "host",
 	}, result.Data)
+
+	// update
+	_, err = client.Logical().Write(path+"/config", map[string]interface{}{
+		"kubernetes_host": "another-host",
+	})
+	assert.NoError(t, err)
+
+	result, err = client.Logical().Read(path + "/config")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"disable_local_ca_jwt": true,
+		"kubernetes_ca_cert":   "cert",
+		"kubernetes_host":      "another-host",
+	}, result.Data)
+
+	// delete
+	_, err = client.Logical().Delete(path + "/config")
+	assert.NoError(t, err)
+
+	result, err = client.Logical().Read(path + "/config")
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 func mountHelper(t *testing.T, client *api.Client) (string, func()) {
