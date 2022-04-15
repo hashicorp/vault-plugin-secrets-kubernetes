@@ -172,7 +172,7 @@ func (b *backend) loadConfig(ctx context.Context, s logical.Storage) (*kubeConfi
 
 	// If host is blank, default to reading from env
 	if config.Host == "" {
-		config.Host, err = getK8sUrlFromEnv()
+		config.Host, err = getK8sURLFromEnv()
 		if err != nil {
 			return nil, errors.New("kubernetes api host was blank and could not determine it from environment variables")
 		}

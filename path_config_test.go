@@ -158,7 +158,7 @@ func Test_loadConfig(t *testing.T) {
 
 func Test_getHostFromEnv(t *testing.T) {
 	t.Run("not set", func(t *testing.T) {
-		host, err := getK8sUrlFromEnv()
+		host, err := getK8sURLFromEnv()
 		assert.EqualError(t, err, `failed to find k8s API host variables "KUBERNETES_SERVICE_HOST" and "KUBERNETES_SERVICE_PORT_HTTPS" in env`)
 		assert.Empty(t, host)
 	})
@@ -167,14 +167,14 @@ func Test_getHostFromEnv(t *testing.T) {
 		defer os.Unsetenv(k8sServiceHostEnv)
 		os.Setenv(k8sServicePortEnv, "123")
 		defer os.Unsetenv(k8sServicePortEnv)
-		host, err := getK8sUrlFromEnv()
+		host, err := getK8sURLFromEnv()
 		assert.NoError(t, err)
 		assert.Equal(t, "https://some-host:123", host)
 	})
 	t.Run("one set", func(t *testing.T) {
 		os.Setenv(k8sServiceHostEnv, "some-host")
 		defer os.Unsetenv(k8sServiceHostEnv)
-		host, err := getK8sUrlFromEnv()
+		host, err := getK8sURLFromEnv()
 		assert.EqualError(t, err, `failed to find k8s API host variables "KUBERNETES_SERVICE_HOST" and "KUBERNETES_SERVICE_PORT_HTTPS" in env`)
 		assert.Empty(t, host)
 	})
