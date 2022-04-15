@@ -223,7 +223,7 @@ func getConfig(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
 	return config, nil
 }
 
-func getK8sUrlFromEnv() (string, error) {
+func getK8sURLFromEnv() (string, error) {
 	host := os.Getenv(k8sServiceHostEnv)
 	port := os.Getenv(k8sServicePortEnv)
 	if host == "" || port == "" {
