@@ -125,6 +125,8 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 
 	if host, ok := data.GetOk("kubernetes_host"); ok {
 		config.Host = host.(string)
+	} else if _, err := getK8sURLFromEnv(); err != nil {
+		return nil, errors.New("kubernetes_host was unset and could not be determined from environment variables")
 	}
 	if disableLocalJWT, ok := data.GetOk("disable_local_ca_jwt"); ok {
 		config.DisableLocalCAJwt = disableLocalJWT.(bool)
@@ -134,10 +136,6 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 	}
 	if serviceAccountJWT, ok := data.GetOk("service_account_jwt"); ok {
 		config.ServiceAccountJwt = serviceAccountJWT.(string)
-	}
-
-	if config.DisableLocalCAJwt && config.CACert == "" {
-		return logical.ErrorResponse("kubernetes_ca_cert must be given when disable_local_ca_jwt is true"), nil
 	}
 
 	entry, err := logical.StorageEntryJSON(configPath, config)

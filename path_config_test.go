@@ -41,12 +41,34 @@ func setupLocalFiles(t *testing.T, b logical.Backend) func() {
 	}
 }
 
+func setupK8sEnvVars() func() {
+	os.Setenv(k8sServiceHostEnv, "env-host")
+	os.Setenv(k8sServicePortEnv, "123")
+
+	return func() {
+		defer os.Unsetenv(k8sServiceHostEnv)
+		defer os.Unsetenv(k8sServicePortEnv)
+	}
+}
+
 func Test_configWithDynamicValues(t *testing.T) {
 	testCases := map[string]struct {
 		config              map[string]interface{}
 		setupInClusterFiles bool
+		setupK8sEnvVars     bool
 		expected            *kubeConfig
 	}{
+		"empty config uses env": {
+			config:              map[string]interface{}{},
+			setupInClusterFiles: true,
+			setupK8sEnvVars:     true,
+			expected: &kubeConfig{
+				Host:              "https://env-host:123",
+				CACert:            testLocalCACert,
+				ServiceAccountJwt: testLocalJWT,
+				DisableLocalCAJwt: false,
+			},
+		},
 		"no CA or JWT, default to local": {
 			config: map[string]interface{}{
 				"kubernetes_host": "host",
@@ -98,6 +120,18 @@ func Test_configWithDynamicValues(t *testing.T) {
 				DisableLocalCAJwt: true,
 			},
 		},
+		"no CA and disable local default": {
+			config: map[string]interface{}{
+				"kubernetes_host":      "host",
+				"disable_local_ca_jwt": true,
+			},
+			expected: &kubeConfig{
+				Host:              "host",
+				CACert:            "",
+				ServiceAccountJwt: "",
+				DisableLocalCAJwt: true,
+			},
+		},
 	}
 
 	for name, tc := range testCases {
@@ -106,6 +140,10 @@ func Test_configWithDynamicValues(t *testing.T) {
 
 			if tc.setupInClusterFiles {
 				cleanup := setupLocalFiles(t, b)
+				defer cleanup()
+			}
+			if tc.setupK8sEnvVars {
+				cleanup := setupK8sEnvVars()
 				defer cleanup()
 			}
 
