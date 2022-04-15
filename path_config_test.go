@@ -41,7 +41,7 @@ func setupLocalFiles(t *testing.T, b logical.Backend) func() {
 	}
 }
 
-func Test_loadConfig(t *testing.T) {
+func Test_configWithDynamicValues(t *testing.T) {
 	testCases := map[string]struct {
 		config              map[string]interface{}
 		setupInClusterFiles bool
@@ -120,12 +120,12 @@ func Test_loadConfig(t *testing.T) {
 				t.Fatalf("err:%s resp:%#v\n", err, resp)
 			}
 
-			conf, err := b.loadConfig(context.Background(), storage)
+			conf, err := b.configWithDynamicValues(context.Background(), storage)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			assert.Equal(t, tc.expected, conf, "expected kubeconfig did not match the return from loadConfig()")
+			assert.Equal(t, tc.expected, conf, "expected kubeconfig did not match the return from configWithDynamicValues()")
 
 			req = &logical.Request{
 				Operation: logical.ReadOperation,

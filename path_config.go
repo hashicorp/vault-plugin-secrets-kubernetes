@@ -100,8 +100,8 @@ func (b *backend) pathConfigRead(ctx context.Context, req *logical.Request, data
 	} else {
 		// Create a map of data to be returned. Note that these reflect just the
 		// values that the user set, not what the defaults will be if they
-		// aren't set (see loadConfig() for those defaults). And the service
-		// account jwt is omitted as sensitive data.
+		// aren't set (see configWithDynamicValues() for those defaults). And
+		// the service account jwt is omitted as sensitive data.
 		resp := &logical.Response{
 			Data: map[string]interface{}{
 				"disable_local_ca_jwt": config.DisableLocalCAJwt,
@@ -159,9 +159,9 @@ func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, da
 	return nil, nil
 }
 
-// loadConfig fetches the kubeConfig from storage and sets any runtime defaults
-// for host, local token, and local CA certificate.
-func (b *backend) loadConfig(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
+// configWithDynamicValues fetches the kubeConfig from storage and sets any
+// runtime defaults for host, local token, and local CA certificate.
+func (b *backend) configWithDynamicValues(ctx context.Context, s logical.Storage) (*kubeConfig, error) {
 	config, err := getConfig(ctx, s)
 	if err != nil {
 		return nil, err
