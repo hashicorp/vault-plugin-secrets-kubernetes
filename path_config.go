@@ -174,7 +174,7 @@ func (b *backend) configWithDynamicValues(ctx context.Context, s logical.Storage
 	if config.Host == "" {
 		config.Host, err = getK8sURLFromEnv()
 		if err != nil {
-			return nil, errors.New("kubernetes api host was blank and could not determine it from environment variables")
+			return nil, errors.New("kubernetes_host was unset and could not determine it from environment variables")
 		}
 	}
 
