@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/go-secure-stdlib/fileutil"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -32,8 +31,8 @@ func setupLocalFiles(t *testing.T, b logical.Backend) func() {
 	}
 	token.WriteString(testLocalJWT)
 	token.Close()
-	b.(*backend).localCACertReader = fileutil.NewCachingFileReader(cert.Name(), caReloadPeriod, time.Now)
-	b.(*backend).localSATokenReader = fileutil.NewCachingFileReader(token.Name(), jwtReloadPeriod, time.Now)
+	b.(*backend).localCACertReader = fileutil.NewCachingFileReader(cert.Name(), caReloadPeriod)
+	b.(*backend).localSATokenReader = fileutil.NewCachingFileReader(token.Name(), jwtReloadPeriod)
 
 	return func() {
 		os.Remove(cert.Name())

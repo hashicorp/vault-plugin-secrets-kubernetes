@@ -183,20 +183,22 @@ func (b *backend) configWithDynamicValues(ctx context.Context, s logical.Storage
 
 	// Read local JWT token unless it was not stored in config.
 	if config.ServiceAccountJwt == "" {
-		config.ServiceAccountJwt, err = b.localSATokenReader.ReadFile()
+		jwtBytes, err := b.localSATokenReader.ReadFile()
 		if err != nil {
 			// Ignore error: make best effort trying to load local JWT,
 			// otherwise the JWT submitted in login payload will be used.
 			b.Logger().Debug("failed to read local service account token, will use client token", "error", err)
 		}
+		config.ServiceAccountJwt = string(jwtBytes)
 	}
 
 	// Read local CA cert unless it was stored in config.
 	if config.CACert == "" {
-		config.CACert, err = b.localCACertReader.ReadFile()
+		caBytes, err := b.localCACertReader.ReadFile()
 		if err != nil {
 			return nil, err
 		}
+		config.CACert = string(caBytes)
 	}
 
 	return config, nil

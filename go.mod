@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/hashicorp/go-hclog v0.16.2
-	github.com/hashicorp/go-secure-stdlib/fileutil v0.0.0-20220414165337-0f14a493710e
+	github.com/hashicorp/go-secure-stdlib/fileutil v0.0.0-20220418165313-7c52bacc6b2f
 	github.com/hashicorp/vault/api v1.5.0
 	github.com/hashicorp/vault/sdk v0.4.1
 	github.com/stretchr/testify v1.7.0

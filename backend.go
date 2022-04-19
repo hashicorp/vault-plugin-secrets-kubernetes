@@ -65,8 +65,8 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 
 func newBackend() (*backend, error) {
 	b := &backend{
-		localSATokenReader: fileutil.NewCachingFileReader(localJWTPath, jwtReloadPeriod, time.Now),
-		localCACertReader:  fileutil.NewCachingFileReader(localCACertPath, caReloadPeriod, time.Now),
+		localSATokenReader: fileutil.NewCachingFileReader(localJWTPath, jwtReloadPeriod),
+		localCACertReader:  fileutil.NewCachingFileReader(localCACertPath, caReloadPeriod),
 	}
 
 	b.Backend = &framework.Backend{
