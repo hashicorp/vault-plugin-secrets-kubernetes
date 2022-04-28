@@ -66,12 +66,12 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"token_max_ttl": {
 					Type:        framework.TypeDurationSecond,
-					Description: "The maximum valid ttl for generated Kubernetes tokens.",
+					Description: "The maximum valid ttl for generated Kubernetes tokens. If not set or set to 0, will use system default.",
 					Required:    false,
 				},
 				"token_ttl": {
 					Type:        framework.TypeDurationSecond,
-					Description: "The default ttl for generated Kubernetes service accounts.",
+					Description: "The default ttl for generated Kubernetes service accounts. If not set or set to 0, will use system default.",
 					Required:    false,
 				},
 				"service_account_name": {
@@ -131,6 +131,8 @@ func (b *backend) pathRoles() []*framework.Path {
 					Callback: b.pathRolesList,
 				},
 			},
+			HelpSynopsis:    pathRolesListHelpSynopsis,
+			HelpDescription: pathRolesListHelpDescription,
 		},
 	}
 }
@@ -313,10 +315,9 @@ func setRole(ctx context.Context, s logical.Storage, name string, entry *roleEnt
 	return nil
 }
 
-const rolesHelpSynopsis = `
-Manage the roles that can be created with this backend.
-`
-
-const rolesHelpDescription = `
-This path lets you manage the roles that can be created with this backend.
-`
+const (
+	rolesHelpSynopsis            = `Manage the roles that can be created with this backend.`
+	rolesHelpDescription         = `This path lets you manage the roles that can be created with this backend.`
+	pathRolesListHelpSynopsis    = `List the existing roles in this backend.`
+	pathRolesListHelpDescription = `A list of existing role names will be returned.`
+)
