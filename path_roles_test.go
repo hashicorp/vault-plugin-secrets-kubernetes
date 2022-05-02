@@ -131,9 +131,9 @@ func TestRoles(t *testing.T) {
 			"token_ttl":                     time.Duration(0).Seconds(),
 		}, resp.Data)
 
-		// update yamlrules
+		// update yamlrules (with a duplicate namespace)
 		resp, err = testRoleCreate(t, b, s, "yamlrules", map[string]interface{}{
-			"allowed_kubernetes_namespaces": []string{"app3", "app4"},
+			"allowed_kubernetes_namespaces": []string{"app3", "app4", "App4"},
 		})
 		assert.NoError(t, err)
 		assert.NoError(t, resp.Error())

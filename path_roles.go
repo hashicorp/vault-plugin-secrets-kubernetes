@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-secure-stdlib/strutil"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
@@ -185,7 +186,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 
 	if k8sNamespaces, ok := d.GetOk("allowed_kubernetes_namespaces"); ok {
-		entry.K8sNamespace = k8sNamespaces.([]string)
+		// K8s namespaces need to be lowercase
+		entry.K8sNamespace = strutil.RemoveDuplicates(k8sNamespaces.([]string), true)
 	}
 	if tokenMaxTTLRaw, ok := d.GetOk("token_max_ttl"); ok {
 		entry.TokenMaxTTL = time.Duration(tokenMaxTTLRaw.(int)) * time.Second
@@ -312,8 +314,8 @@ func setRole(ctx context.Context, s logical.Storage, name string, entry *roleEnt
 }
 
 const (
-	rolesHelpSynopsis            = `Manage the roles that can be created with this backend.`
-	rolesHelpDescription         = `This path lets you manage the roles that can be created with this backend.`
-	pathRolesListHelpSynopsis    = `List the existing roles in this backend.`
+	rolesHelpSynopsis            = `Manage the roles that can be created with this secrets engine.`
+	rolesHelpDescription         = `This path lets you manage the roles that can be created with this secrets engine.`
+	pathRolesListHelpSynopsis    = `List the existing roles in this secrets engine.`
 	pathRolesListHelpDescription = `A list of existing role names will be returned.`
 )
