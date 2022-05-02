@@ -252,7 +252,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 func (b *backend) pathRolesDelete(ctx context.Context, req *logical.Request, d *framework.FieldData) (resp *logical.Response, err error) {
 	rName := d.Get("name").(string)
-	if err := req.Storage.Delete(ctx, "roles/"+rName); err != nil {
+	if err := req.Storage.Delete(ctx, rolesPath+rName); err != nil {
 		return nil, err
 	}
 	return nil, nil
