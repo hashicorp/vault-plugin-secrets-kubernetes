@@ -308,11 +308,7 @@ func setRole(ctx context.Context, s logical.Storage, name string, entry *roleEnt
 		return fmt.Errorf("failed to create storage entry for role %q", name)
 	}
 
-	if err := s.Put(ctx, jsonEntry); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Put(ctx, jsonEntry)
 }
 
 const (
