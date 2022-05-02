@@ -112,6 +112,7 @@ func TestRoles(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"generated_role_rules":          goodYAMLRules,
 			"additional_metadata":           testMetadata,
+			"kubernetes_role_type":          "role",
 		})
 		assert.NoError(t, err)
 		assert.NoError(t, resp.Error())
@@ -123,7 +124,7 @@ func TestRoles(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"generated_role_rules":          goodYAMLRules,
 			"kubernetes_role_name":          "",
-			"kubernetes_role_type":          "Role",
+			"kubernetes_role_type":          "role",
 			"name":                          "yamlrules",
 			"name_template":                 "",
 			"service_account_name":          "",
@@ -144,7 +145,7 @@ func TestRoles(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"app3", "app4"},
 			"generated_role_rules":          goodYAMLRules,
 			"kubernetes_role_name":          "",
-			"kubernetes_role_type":          "Role",
+			"kubernetes_role_type":          "role",
 			"name":                          "yamlrules",
 			"name_template":                 "",
 			"service_account_name":          "",
