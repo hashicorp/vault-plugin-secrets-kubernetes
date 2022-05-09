@@ -65,6 +65,23 @@ func TestRoles(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_type must be either 'Role' or 'ClusterRole'")
+
+		resp, err = testRoleCreate(t, b, s, "badttl_tokenmax", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"token_ttl":                     "11h",
+			"token_max_ttl":                 "5h",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "token_ttl 11h0m0s cannot be greater than token_max_ttl 5h0m0s")
+
+		resp, err = testRoleCreate(t, b, s, "badttl_mountmax", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"token_ttl":                     "800h",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "token_ttl 800h0m0s cannot be greater than the secret engine mount's max ttl 24h0m0s")
 	})
 
 	t.Run("delete role - non-existant and blank", func(t *testing.T) {

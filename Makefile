@@ -17,7 +17,7 @@ test: fmtcheck
 
 .PHONY: integration-test
 integration-test:
-	INTEGRATION_TESTS=true CGO_ENABLED=0 go test github.com/hashicorp/vault-plugin-secrets-kubernetes/integrationtest/... $(TESTARGS) -count=1 -timeout=20m
+	INTEGRATION_TESTS=true KIND_CLUSTER_NAME=$(KIND_CLUSTER_NAME) CGO_ENABLED=0 go test github.com/hashicorp/vault-plugin-secrets-kubernetes/integrationtest/... $(TESTARGS) -count=1 -timeout=20m
 
 .PHONY: fmtcheck
 fmtcheck:
@@ -61,6 +61,12 @@ setup-integration-test: teardown-integration-test vault-image
 		--set injector.enabled=false \
 		--set server.extraArgs="-dev-plugin-dir=/vault/plugin_directory"
 	kubectl patch --namespace=test statefulset vault --patch-file integrationtest/vault/hostPortPatch.yaml
+	kubectl apply --namespace=test -f integrationTest/vault/testRoles.yaml
+	kubectl apply --namespace=test -f integrationTest/vault/testServiceAccounts.yaml
+	kubectl apply --namespace=test -f integrationTest/vault/testBindings.yaml
+	# kubectl create clusterrole k8s-clusterrole --verb=create --resource=serviceaccounts/token
+	# kubectl create clusterrolebinding vault-crb --clusterrole=k8s-clusterrole --serviceaccount=test:vault
+
 	kubectl delete --namespace=test pod vault-0
 	kubectl wait --namespace=test --for=condition=Ready --timeout=5m pod -l app.kubernetes.io/name=vault
 
@@ -68,3 +74,8 @@ setup-integration-test: teardown-integration-test vault-image
 teardown-integration-test:
 	helm uninstall vault --namespace=test || true
 	kubectl delete --ignore-not-found namespace test
+	# kubectl delete --ignore-not-found clusterrolebinding vault-crb
+	# kubectl delete --ignore-not-found clusterrole k8s-clusterrole
+	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testBindings.yaml
+	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testServiceAccounts.yaml
+	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testRoles.yaml

@@ -2,7 +2,6 @@ package kubesecrets
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -11,18 +10,17 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
-	"gopkg.in/yaml.v2"
-	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 const (
-	defaultRoleType = "Role"
-	rolesPath       = "roles/"
+	defaultRoleType     = "Role"
+	rolesPath           = "roles/"
+	defaultNameTemplate = `{{ printf "v-%s-%s-%s-%s" (.DisplayName | truncate 8) (.RoleName | truncate 8) (unix_time) (random 24) | truncate 62 | lowercase }}`
 )
 
 type roleEntry struct {
 	Name               string        `json:"name" mapstructure:"name"`
-	K8sNamespace       []string      `json:"allowed_kubernetes_namespaces" mapstructure:"allowed_kubernetes_namespaces"`
+	K8sNamespaces      []string      `json:"allowed_kubernetes_namespaces" mapstructure:"allowed_kubernetes_namespaces"`
 	TokenMaxTTL        time.Duration `json:"token_max_ttl" mapstructure:"token_max_ttl"`
 	TokenTTL           time.Duration `json:"token_ttl" mapstructure:"token_ttl"`
 	ServiceAccountName string        `json:"service_account_name" mapstructure:"service_account_name"`
@@ -187,7 +185,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 	if k8sNamespaces, ok := d.GetOk("allowed_kubernetes_namespaces"); ok {
 		// K8s namespaces need to be lowercase
-		entry.K8sNamespace = strutil.RemoveDuplicates(k8sNamespaces.([]string), true)
+		entry.K8sNamespaces = strutil.RemoveDuplicates(k8sNamespaces.([]string), true)
 	}
 	if tokenMaxTTLRaw, ok := d.GetOk("token_max_ttl"); ok {
 		entry.TokenMaxTTL = time.Duration(tokenMaxTTLRaw.(int)) * time.Second
@@ -221,8 +219,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		}
 	}
 
-	// Sanity checks
-	if len(entry.K8sNamespace) == 0 {
+	// Validate the entry
+	if len(entry.K8sNamespaces) == 0 {
 		return logical.ErrorResponse("allowed_kubernetes_namespaces must be set"), nil
 	}
 	if !onlyOneSet(entry.ServiceAccountName, entry.K8sRoleName, entry.RoleRules) {
@@ -233,15 +231,17 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 	// Try parsing the role rules as json or yaml
 	if entry.RoleRules != "" {
-		testPolicyRules := struct {
-			Rules []rbacv1.PolicyRule `json:"rules"`
-		}{}
-		err := json.Unmarshal([]byte(entry.RoleRules), &testPolicyRules)
-		if err != nil {
-			// Try yaml
-			if err := yaml.Unmarshal([]byte(entry.RoleRules), &testPolicyRules); err != nil {
-				return logical.ErrorResponse("failed to parse 'generated_role_rules' as k8s.io/api/rbac/v1/Policy object"), nil
-			}
+		if _, err := makeRules(entry.RoleRules); err != nil {
+			return logical.ErrorResponse("failed to parse 'generated_role_rules' as k8s.io/api/rbac/v1/Policy object"), nil
+		}
+	}
+
+	if entry.TokenTTL > entry.TokenMaxTTL {
+		if entry.TokenMaxTTL > 0 {
+			return logical.ErrorResponse("token_ttl %s cannot be greater than token_max_ttl %s", entry.TokenTTL, entry.TokenMaxTTL), nil
+		}
+		if entry.TokenTTL > b.System().MaxLeaseTTL() {
+			return logical.ErrorResponse("token_ttl %s cannot be greater than the secret engine mount's max ttl %s", entry.TokenTTL, b.System().MaxLeaseTTL()), nil
 		}
 	}
 
@@ -254,6 +254,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 func (b *backend) pathRolesDelete(ctx context.Context, req *logical.Request, d *framework.FieldData) (resp *logical.Response, err error) {
 	rName := d.Get("name").(string)
+	// TODO(tvoran): call revoke on all associated leases too?
 	if err := req.Storage.Delete(ctx, rolesPath+rName); err != nil {
 		return nil, err
 	}

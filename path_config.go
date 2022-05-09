@@ -147,13 +147,19 @@ func (b *backend) pathConfigWrite(ctx context.Context, req *logical.Request, dat
 		return nil, err
 	}
 
+	// reset the client so the next invocation will pick up the new configuration
+	b.reset()
+
 	return nil, nil
 }
 
 func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
-	if err := req.Storage.Delete(ctx, configPath); err != nil {
-		return nil, err
+	err := req.Storage.Delete(ctx, configPath)
+
+	if err == nil {
+		b.reset()
 	}
+
 	return nil, nil
 }
 

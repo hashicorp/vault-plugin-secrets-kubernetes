@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/vault/api"
@@ -34,6 +35,9 @@ func TestMain(m *testing.M) {
 		os.Setenv("VAULT_ADDR", "http://127.0.0.1:38300")
 		os.Setenv("VAULT_TOKEN", "root")
 		os.Setenv("KUBERNETES_JWT", out.String())
+		os.Setenv("KUBERNETES_CA", getK8sCA())
+		os.Setenv("KUBE_HOST", getKubeHost(os.Getenv("KIND_CLUSTER_NAME")))
+		fmt.Printf("hello kube_host %s\n", os.Getenv("KUBE_HOST"))
 		os.Exit(m.Run())
 	}
 }
@@ -212,3 +216,25 @@ const (
 	oneHour       json.Number = "3600"
 	oneDay        json.Number = "86400"
 )
+
+func runCmd(command string) string {
+	parts := strings.Split(command, " ")
+	fmt.Println(parts)
+	cmd := exec.Command(parts[0], parts[1:]...)
+	out := &bytes.Buffer{}
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if err := cmd.Run(); err != nil {
+		panic(fmt.Sprintf("Got unexpected output: %s, err = %s", out.String(), err))
+	}
+	return out.String()
+}
+
+func getK8sCA() string {
+	return runCmd("kubectl exec --namespace=test vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+}
+
+func getKubeHost(clusterName string) string {
+	cmd := fmt.Sprintf(`kubectl config view --raw --minify --flatten --output=jsonpath={.clusters[?(@.name=="kind-%s")].cluster.server}`, clusterName)
+	return runCmd(cmd)
+}
