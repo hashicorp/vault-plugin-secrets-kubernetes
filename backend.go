@@ -94,9 +94,8 @@ func newBackend() (*backend, error) {
 		Secrets: []*framework.Secret{
 			b.kubeServiceAccount(),
 		},
-		// TODO(tvoran): coming soon
-		// WALRollback:       b.walRollback,
-		// WALRollbackMinAge: 2 * time.Minute,
+		WALRollback:       b.walRollback,
+		WALRollbackMinAge: 2 * time.Minute,
 	}
 
 	return b, nil

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/ryboe/q"
 )
 
 const (
@@ -149,6 +151,11 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	createdK8sRoleBinding := ""
 	createdK8sRole := ""
 
+	// WAL id's
+	serviceAccountWALId := ""
+	roleWALId := ""
+	bindingWALId := ""
+
 	switch {
 	case role.ServiceAccountName != "":
 		// Create token for existing service account
@@ -162,15 +169,16 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		// Create service account for existing role
 		// then rolebinding
 		// then token
-		_, err := client.createServiceAccount(ctx, parsedPayload.Namespace, genName, role.Metadata.Labels, role.Metadata.Annotations)
+		serviceAccountWALId, err = createServiceAccount(ctx, client, req.Storage, parsedPayload.Namespace, genName, role.Metadata.Labels, role.Metadata.Annotations)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create service account '%s/%s': %s", parsedPayload.Namespace, genName, err)
+			return nil, err
 		}
 
-		err = client.createRoleBinding(ctx, parsedPayload.Namespace, genName, role.K8sRoleName, parsedPayload.ClusterRoleBinding, role)
+		bindingWALId, err = createRoleBinding(ctx, client, req.Storage, parsedPayload.Namespace, genName, role.K8sRoleName, parsedPayload.ClusterRoleBinding, role)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", genName, role.K8sRoleName, err)
+			return nil, err
 		}
+
 		status, err := client.createToken(ctx, parsedPayload.Namespace, genName, theTTL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a service account token for %s/%s: %s", parsedPayload.Namespace, genName, err)
@@ -181,19 +189,21 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		createdK8sRoleBinding = genName
 	case role.RoleRules != "":
 		// Create role, service account, binding, token
-		err := client.createRole(ctx, parsedPayload.Namespace, genName, role)
+		roleWALId, err = createRole(ctx, client, req.Storage, parsedPayload.Namespace, genName, role)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create Role/ClusterRole '%s/%s: %s", parsedPayload.Namespace, genName, err)
-		}
-		_, err = client.createServiceAccount(ctx, parsedPayload.Namespace, genName, role.Metadata.Labels, role.Metadata.Annotations)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create service account '%s/%s': %s", parsedPayload.Namespace, genName, err)
+			return nil, err
 		}
 
-		err = client.createRoleBinding(ctx, parsedPayload.Namespace, genName, genName, parsedPayload.ClusterRoleBinding, role)
+		serviceAccountWALId, err = createServiceAccount(ctx, client, req.Storage, parsedPayload.Namespace, genName, role.Metadata.Labels, role.Metadata.Annotations)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", genName, role.K8sRoleName, err)
+			return nil, err
 		}
+
+		bindingWALId, err = createRoleBinding(ctx, client, req.Storage, parsedPayload.Namespace, genName, genName, parsedPayload.ClusterRoleBinding, role)
+		if err != nil {
+			return nil, err
+		}
+
 		status, err := client.createToken(ctx, parsedPayload.Namespace, genName, theTTL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a service account token for %s/%s: %s", parsedPayload.Namespace, genName, err)
@@ -204,9 +214,22 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		createdServiceAccountName = genName
 		createdK8sRoleBinding = genName
 
-		// TODO(tvoran):
 	default:
 		return nil, fmt.Errorf("one of service_account_name, kubernetes_role_name, or generated_role_rules must be set")
+	}
+
+	// Delete any WALs entries that were created
+	var errors *multierror.Error
+	for _, walId := range []string{roleWALId, serviceAccountWALId, bindingWALId} {
+		if walId != "" {
+			q.Q("deleting walId", walId) // DEBUG
+			if err := framework.DeleteWAL(ctx, req.Storage, walId); err != nil {
+				errors = multierror.Append(errors, fmt.Errorf("error deleting WAL: %w", err))
+			}
+		}
+	}
+	if errors.ErrorOrNil() != nil {
+		return nil, errors
 	}
 
 	resp := b.Secret(kubeTokenType).Response(map[string]interface{}{
@@ -269,4 +292,63 @@ func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, er
 	}
 
 	return b.client, nil
+}
+
+// create service account and put a WAL entry
+func createServiceAccount(ctx context.Context, client *client, s logical.Storage, namespace, name string, labels, annotations map[string]string) (string, error) {
+	_, err := client.createServiceAccount(ctx, namespace, name, labels, annotations)
+	if err != nil {
+		return "", fmt.Errorf("failed to create service account '%s/%s': %s", namespace, name, err)
+	}
+	// Write a WAL entry in case subsequent parts don't complete
+	walId, err := framework.PutWAL(ctx, s, walServiceAccountKind, &walServiceAccount{
+		Namespace:  namespace,
+		Name:       name,
+		Expiration: time.Now().Add(maxWALAge),
+	})
+	if err != nil {
+		return "", fmt.Errorf("error writing service account WAL: %w", err)
+	}
+
+	return walId, nil
+}
+
+// create role binding and put a WAL entry
+func createRoleBinding(ctx context.Context, client *client, s logical.Storage, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry) (string, error) {
+	err := client.createRoleBinding(ctx, namespace, name, k8sRoleName, isClusterRoleBinding, vaultRole)
+	if err != nil {
+		return "", fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", name, k8sRoleName, err)
+	}
+	// Write a WAL entry in case the role binding create doesn't complete
+	walId, err := framework.PutWAL(ctx, s, walBindingKind, &walRoleBinding{
+		Namespace:  namespace,
+		Name:       name,
+		IsCluster:  isClusterRoleBinding,
+		Expiration: time.Now().Add(maxWALAge),
+	})
+	if err != nil {
+		return "", fmt.Errorf("error writing role binding WAL: %w", err)
+	}
+
+	return walId, nil
+}
+
+// create a role and put a WAL entry
+func createRole(ctx context.Context, client *client, s logical.Storage, namespace, name string, vaultRole *roleEntry) (string, error) {
+	err := client.createRole(ctx, namespace, name, vaultRole)
+	if err != nil {
+		return "", fmt.Errorf("failed to create Role/ClusterRole '%s/%s: %s", namespace, name, err)
+	}
+	// Write a WAL entry in case subsequent parts don't complete
+	walId, err := framework.PutWAL(ctx, s, walRoleKind, &walRole{
+		Namespace:  namespace,
+		Name:       name,
+		RoleType:   vaultRole.K8sRoleType,
+		Expiration: time.Now().Add(maxWALAge),
+	})
+	if err != nil {
+		return "", fmt.Errorf("error writing service account WAL: %w", err)
+	}
+
+	return walId, nil
 }
