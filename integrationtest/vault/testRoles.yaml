@@ -20,6 +20,8 @@ rules:
   resources: 
   - rolebindings
   - roles
+  - clusterrolebindings
+  - clusterroles
   verbs:
   - create
   - delete
