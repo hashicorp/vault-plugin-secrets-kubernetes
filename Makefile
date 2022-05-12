@@ -61,9 +61,9 @@ setup-integration-test: teardown-integration-test vault-image
 		--set injector.enabled=false \
 		--set server.extraArgs="-dev-plugin-dir=/vault/plugin_directory"
 	kubectl patch --namespace=test statefulset vault --patch-file integrationtest/vault/hostPortPatch.yaml
-	kubectl apply --namespace=test -f integrationTest/vault/testRoles.yaml
-	kubectl apply --namespace=test -f integrationTest/vault/testServiceAccounts.yaml
-	kubectl apply --namespace=test -f integrationTest/vault/testBindings.yaml
+	kubectl apply --namespace=test -f integrationtest/vault/testRoles.yaml
+	kubectl apply --namespace=test -f integrationtest/vault/testServiceAccounts.yaml
+	kubectl apply --namespace=test -f integrationtest/vault/testBindings.yaml
 	# kubectl create clusterrole k8s-clusterrole --verb=create --resource=serviceaccounts/token
 	# kubectl create clusterrolebinding vault-crb --clusterrole=k8s-clusterrole --serviceaccount=test:vault
 
@@ -76,6 +76,6 @@ teardown-integration-test:
 	kubectl delete --ignore-not-found namespace test
 	# kubectl delete --ignore-not-found clusterrolebinding vault-crb
 	# kubectl delete --ignore-not-found clusterrole k8s-clusterrole
-	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testBindings.yaml
-	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testServiceAccounts.yaml
-	kubectl delete --ignore-not-found --namespace=test -f integrationTest/vault/testRoles.yaml
+	kubectl delete --ignore-not-found --namespace=test -f integrationtest/vault/testBindings.yaml
+	kubectl delete --ignore-not-found --namespace=test -f integrationtest/vault/testServiceAccounts.yaml
+	kubectl delete --ignore-not-found --namespace=test -f integrationtest/vault/testRoles.yaml
