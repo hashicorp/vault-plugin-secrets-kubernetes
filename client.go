@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_yaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
@@ -59,26 +60,35 @@ func (c *client) createToken(ctx context.Context, namespace, name string, ttl ti
 	return &resp.Status, nil
 }
 
-func (c *client) createServiceAccount(ctx context.Context, namespace, name string, labels, annotations map[string]string) (*v1.ServiceAccount, error) {
+func (c *client) createServiceAccount(ctx context.Context, namespace, name string, vaultRole *roleEntry, ownerRef metav1.OwnerReference) (*v1.ServiceAccount, error) {
 	serviceAccountConfig := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Namespace:   namespace,
-			Labels:      labels,
-			Annotations: annotations,
+			Name:            name,
+			Namespace:       namespace,
+			Labels:          vaultRole.Metadata.Labels,
+			Annotations:     vaultRole.Metadata.Annotations,
+			OwnerReferences: []metav1.OwnerReference{ownerRef},
 		},
 	}
 	return c.k8s.CoreV1().ServiceAccounts(namespace).Create(ctx, serviceAccountConfig, metav1.CreateOptions{})
 }
 
 func (c *client) deleteServiceAccount(ctx context.Context, namespace, name string) error {
-	return c.k8s.CoreV1().ServiceAccounts(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	err := c.k8s.CoreV1().ServiceAccounts(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	}
+	return nil
 }
 
-func (c *client) createRole(ctx context.Context, namespace, name string, vaultRole *roleEntry) error {
+func (c *client) createRole(ctx context.Context, namespace, name string, vaultRole *roleEntry) (metav1.OwnerReference, error) {
+	thisOwnerRef := metav1.OwnerReference{
+		APIVersion: "rbac.authorization.k8s.io/v1",
+		Name:       name,
+	}
 	roleRules, err := makeRules(vaultRole.RoleRules)
 	if err != nil {
-		return err
+		return thisOwnerRef, err
 	}
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
@@ -93,38 +103,58 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 			ObjectMeta: objectMeta,
 			Rules:      roleRules,
 		}
-		_, err := c.k8s.RbacV1().Roles(namespace).Create(ctx, roleConfig, metav1.CreateOptions{})
-		return err
+		resp, err := c.k8s.RbacV1().Roles(namespace).Create(ctx, roleConfig, metav1.CreateOptions{})
+		if resp != nil {
+			thisOwnerRef.Kind = "Role"
+			thisOwnerRef.UID = resp.UID
+		}
+		return thisOwnerRef, err
 
 	case "clusterrole":
 		roleConfig := &rbacv1.ClusterRole{
 			ObjectMeta: objectMeta,
 			Rules:      roleRules,
 		}
-		_, err := c.k8s.RbacV1().ClusterRoles().Create(ctx, roleConfig, metav1.CreateOptions{})
-		return err
+		resp, err := c.k8s.RbacV1().ClusterRoles().Create(ctx, roleConfig, metav1.CreateOptions{})
+		if resp != nil {
+			thisOwnerRef.Kind = "ClusterRole"
+			thisOwnerRef.UID = resp.UID
+		}
+		return thisOwnerRef, err
 
 	default:
-		return fmt.Errorf("unknown role type '%s'", vaultRole.K8sRoleType)
+		return thisOwnerRef, fmt.Errorf("unknown role type '%s'", vaultRole.K8sRoleType)
 	}
 }
 
 func (c *client) deleteRole(ctx context.Context, namespace, name, roleType string) error {
+	var err error
 	switch strings.ToLower(roleType) {
 	case "role":
-		return c.k8s.RbacV1().Roles(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		err = c.k8s.RbacV1().Roles(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	case "clusterrole":
-		return c.k8s.RbacV1().ClusterRoles().Delete(ctx, name, metav1.DeleteOptions{})
+		err = c.k8s.RbacV1().ClusterRoles().Delete(ctx, name, metav1.DeleteOptions{})
 	default:
 		return fmt.Errorf("unsupported role type '%s'", roleType)
 	}
+	if err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	}
+	return nil
 }
 
-func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry) error {
+func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry, ownerRef *metav1.OwnerReference) (metav1.OwnerReference, error) {
+	thisOwnerRef := metav1.OwnerReference{
+		APIVersion: "rbac.authorization.k8s.io/v1",
+		Name:       name,
+	}
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
 		Labels:      vaultRole.Metadata.Labels,
 		Annotations: vaultRole.Metadata.Annotations,
+	}
+	if ownerRef != nil {
+		objectMeta.OwnerReferences = []metav1.OwnerReference{*ownerRef}
 	}
 	subjects := []rbacv1.Subject{
 		{
@@ -144,8 +174,13 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 			Subjects:   subjects,
 			RoleRef:    roleRef,
 		}
-		_, err := c.k8s.RbacV1().ClusterRoleBindings().Create(ctx, roleConfig, metav1.CreateOptions{})
-		return err
+		resp, err := c.k8s.RbacV1().ClusterRoleBindings().Create(ctx, roleConfig, metav1.CreateOptions{})
+		if resp != nil {
+			q.Q(resp) // DEBUG
+			thisOwnerRef.Kind = "ClusterRoleBinding"
+			thisOwnerRef.UID = resp.UID
+		}
+		return thisOwnerRef, err
 	}
 
 	objectMeta.Namespace = namespace
@@ -154,15 +189,26 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 		Subjects:   subjects,
 		RoleRef:    roleRef,
 	}
-	_, err := c.k8s.RbacV1().RoleBindings(namespace).Create(ctx, roleConfig, metav1.CreateOptions{})
-	return err
+	resp, err := c.k8s.RbacV1().RoleBindings(namespace).Create(ctx, roleConfig, metav1.CreateOptions{})
+	if resp != nil {
+		q.Q(resp) // DEBUG
+		thisOwnerRef.Kind = "RoleBinding"
+		thisOwnerRef.UID = resp.UID
+	}
+	return thisOwnerRef, err
 }
 
 func (c *client) deleteRoleBinding(ctx context.Context, namespace, name string, isClusterRoleBinding bool) error {
+	var err error
 	if isClusterRoleBinding {
-		return c.k8s.RbacV1().ClusterRoleBindings().Delete(ctx, name, metav1.DeleteOptions{})
+		err = c.k8s.RbacV1().ClusterRoleBindings().Delete(ctx, name, metav1.DeleteOptions{})
+	} else {
+		err = c.k8s.RbacV1().RoleBindings(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	}
-	return c.k8s.RbacV1().RoleBindings(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	}
+	return nil
 }
 
 func makeRules(rules string) ([]rbacv1.PolicyRule, error) {

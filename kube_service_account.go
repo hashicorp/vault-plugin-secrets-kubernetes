@@ -2,7 +2,6 @@ package kubesecrets
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
@@ -45,6 +44,11 @@ func (b *backend) kubeTokenRevoke(ctx context.Context, req *logical.Request, d *
 	k8sRoleType := req.Secret.InternalData["created_role_type"].(string)
 
 	var errs *multierror.Error
+	if k8sRole != "" {
+		if err := client.deleteRole(ctx, namespace, k8sRole, k8sRoleType); err != nil {
+			errs = multierror.Append(fmt.Errorf("failed to delete %s '%s/%s': %s", k8sRoleType, namespace, k8sRole, err))
+		}
+	}
 	if k8sRoleBinding != "" {
 		if err := client.deleteRoleBinding(ctx, namespace, k8sRoleBinding, isClusterRoleBinding); err != nil {
 			roleType := "RoleBinding"
@@ -59,33 +63,6 @@ func (b *backend) kubeTokenRevoke(ctx context.Context, req *logical.Request, d *
 			errs = multierror.Append(fmt.Errorf("failed to delete ServiceAccount '%s/%s': %s", namespace, k8sServiceAccount, err))
 		}
 	}
-	if k8sRole != "" {
-		if err := client.deleteRole(ctx, namespace, k8sRole, k8sRoleType); err != nil {
-			errs = multierror.Append(fmt.Errorf("failed to delete %s '%s/%s': %s", k8sRoleType, namespace, k8sRole, err))
-		}
-	}
 
 	return nil, errs.ErrorOrNil()
-}
-
-// TODO(tvoran): remove since these aren't renewable
-func (b *backend) kubeTokenRenew(ctx context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
-	roleRaw, ok := req.Secret.InternalData["role"]
-	if !ok {
-		return nil, errors.New("internal data 'role' not found")
-	}
-
-	role, err := getRole(ctx, req.Storage, roleRaw.(string))
-	if err != nil {
-		return nil, err
-	}
-
-	if role == nil {
-		return nil, nil
-	}
-
-	resp := &logical.Response{Secret: req.Secret}
-	resp.Secret.TTL = role.TokenTTL
-	resp.Secret.MaxTTL = role.TokenMaxTTL
-	return nil, nil
 }

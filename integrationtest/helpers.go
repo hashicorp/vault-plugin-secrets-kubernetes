@@ -35,12 +35,6 @@ func newK8sClient(t *testing.T, token string) kubernetes.Interface {
 	return client
 }
 
-func testCreds(t *testing.T, role string, config map[string]interface{}) {
-	t.Helper()
-	// TODO(tvoran): if type is clusterrole, try listing deployments instead of
-	// pods, since pods will be allowed everywhere
-}
-
 // Verify a creds response with a generated service account
 func verifyCredsResponseGenerated(t *testing.T, result *api.Secret, namespace string, leaseDuration int) {
 	t.Helper()
@@ -150,7 +144,8 @@ func testRoleType(t *testing.T, client *api.Client, mountPath string, roleConfig
 		"cluster_role_binding": false,
 		"ttl":                  "2h",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, result1)
 	verifyCredsResponseGenerated(t, result1, "test", 7200)
 
 	// Try using the generated token. Listing pods should be allowed in the
