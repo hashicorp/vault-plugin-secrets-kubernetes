@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -103,7 +102,7 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 	if !strutil.StrListContains(roleEntry.K8sNamespaces, "*") && !strutil.StrListContains(roleEntry.K8sNamespaces, request.Namespace) {
 		return nil, fmt.Errorf("kubernetes_namespace '%s' is not present in role's allowed_kubernetes_namespaces", request.Namespace)
 	}
-	if request.ClusterRoleBinding && strings.ToLower(roleEntry.K8sRoleType) == "role" {
+	if request.ClusterRoleBinding && makeRoleType(roleEntry.K8sRoleType) == "Role" {
 		return nil, fmt.Errorf("a ClusterRoleBinding cannot ref a Role")
 	}
 
@@ -147,8 +146,6 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 
 	// These are created items to save internally and/or return to the caller
 	token := ""
-	// TODO(tvoran): because sometimes the service account name is static, and
-	// this is returned to the user
 	serviceAccountName := ""
 	createdServiceAccountName := ""
 	createdK8sRoleBinding := ""

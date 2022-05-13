@@ -158,7 +158,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 		roleConfig := map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-role-list-pods",
-			"kubernetes_role_type":          "Role",
+			"kubernetes_role_type":          "role",
 			"token_ttl":                     "1h",
 			"token_max_ttl":                 "24h",
 		}
@@ -167,7 +167,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          "",
 			"kubernetes_role_name":          "test-role-list-pods",
-			"kubernetes_role_type":          "Role",
+			"kubernetes_role_type":          "role",
 			"name":                          "testrole",
 			"name_template":                 "",
 			"service_account_name":          "",
@@ -181,7 +181,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 		roleConfig := map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
-			"kubernetes_role_type":          "ClusterRole",
+			"kubernetes_role_type":          "Clusterrole",
 			"token_ttl":                     "1h",
 			"token_max_ttl":                 "24h",
 		}
@@ -190,7 +190,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          "",
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
-			"kubernetes_role_type":          "ClusterRole",
+			"kubernetes_role_type":          "Clusterrole",
 			"name":                          "testrole",
 			"name_template":                 "",
 			"service_account_name":          "",
@@ -215,25 +215,39 @@ func TestCreds_generated_role_rules(t *testing.T) {
 	_, err = client.Logical().Write(path+"/config", map[string]interface{}{})
 	require.NoError(t, err)
 
-	t.Run("Role type", func(t *testing.T) {
-		roleRules := `rules:
+	roleRulesYAML := `rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["list"]`
 
+	roleRulesJSON := `"rules": [
+	{
+		"apiGroups": [
+			""
+		],
+		"resources": [
+			"pods"
+		],
+		"verbs": [
+			"list"
+		]
+	}
+]`
+
+	t.Run("Role type", func(t *testing.T) {
 		roleConfig := map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"test"},
-			"generated_role_rules":          roleRules,
-			"kubernetes_role_type":          "Role",
+			"generated_role_rules":          roleRulesYAML,
+			"kubernetes_role_type":          "RolE",
 			"token_ttl":                     "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
 			"additional_metadata":           map[string]interface{}{},
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
-			"generated_role_rules":          roleRules,
+			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_name":          "",
-			"kubernetes_role_type":          "Role",
+			"kubernetes_role_type":          "RolE",
 			"name":                          "testrole",
 			"name_template":                 "",
 			"service_account_name":          "",
@@ -244,24 +258,19 @@ func TestCreds_generated_role_rules(t *testing.T) {
 	})
 
 	t.Run("ClusterRole type", func(t *testing.T) {
-		roleRules := `rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["list"]`
-
 		roleConfig := map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"test"},
-			"generated_role_rules":          roleRules,
-			"kubernetes_role_type":          "ClusterRole",
+			"generated_role_rules":          roleRulesJSON,
+			"kubernetes_role_type":          "clusterRole",
 			"token_ttl":                     "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
 			"additional_metadata":           map[string]interface{}{},
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
-			"generated_role_rules":          roleRules,
+			"generated_role_rules":          roleRulesJSON,
 			"kubernetes_role_name":          "",
-			"kubernetes_role_type":          "ClusterRole",
+			"kubernetes_role_type":          "clusterRole",
 			"name":                          "testrole",
 			"name_template":                 "",
 			"service_account_name":          "",

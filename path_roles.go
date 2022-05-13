@@ -3,7 +3,6 @@ package kubesecrets
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-secure-stdlib/strutil"
@@ -203,6 +202,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	if k8sRoleType, ok := d.GetOk("kubernetes_role_type"); ok {
 		entry.K8sRoleType = k8sRoleType.(string)
 	}
+	// TODO(tvoran): check if this is necessary with the default set in fieldschema
 	if entry.K8sRoleType == "" {
 		entry.K8sRoleType = defaultRoleType
 	}
@@ -226,7 +226,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	if !onlyOneSet(entry.ServiceAccountName, entry.K8sRoleName, entry.RoleRules) {
 		return logical.ErrorResponse("one (and only one) of service_account_name, kubernetes_role_name or generated_role_rules must be set"), nil
 	}
-	if strings.ToLower(entry.K8sRoleType) != "role" && strings.ToLower(entry.K8sRoleType) != "clusterrole" {
+	if makeRoleType(entry.K8sRoleType) != "Role" && makeRoleType(entry.K8sRoleType) != "ClusterRole" {
 		return logical.ErrorResponse("kubernetes_role_type must be either 'Role' or 'ClusterRole'"), nil
 	}
 	// Try parsing the role rules as json or yaml

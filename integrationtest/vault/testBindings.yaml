@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: test-token-create
+  name: k8s-secrets-abilities-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -10,7 +10,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: test-token-create
-  namespace: default
+  namespace: test
 - kind: ServiceAccount
   name: vault
   namespace: test
@@ -26,7 +26,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: test-token-create
-  namespace: default
+  namespace: test
 - kind: ServiceAccount
   name: vault
   namespace: test

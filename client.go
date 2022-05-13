@@ -19,6 +19,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var standardLabels = map[string]string{
+	"app.kubernetes.io/managed-by": "vault",
+	"app.kubernetes.io/created-by": "vault-plugin-secrets-kubernetes",
+}
+
 type client struct {
 	k8s kubernetes.Interface
 }
@@ -61,11 +66,12 @@ func (c *client) createToken(ctx context.Context, namespace, name string, ttl ti
 }
 
 func (c *client) createServiceAccount(ctx context.Context, namespace, name string, vaultRole *roleEntry, ownerRef metav1.OwnerReference) (*v1.ServiceAccount, error) {
+	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
 	serviceAccountConfig := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
 			Namespace:       namespace,
-			Labels:          vaultRole.Metadata.Labels,
+			Labels:          labels,
 			Annotations:     vaultRole.Metadata.Annotations,
 			OwnerReferences: []metav1.OwnerReference{ownerRef},
 		},
@@ -90,14 +96,15 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 	if err != nil {
 		return thisOwnerRef, err
 	}
+	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
-		Labels:      vaultRole.Metadata.Labels,
+		Labels:      labels,
 		Annotations: vaultRole.Metadata.Annotations,
 	}
 
-	switch strings.ToLower(vaultRole.K8sRoleType) {
-	case "role":
+	switch makeRoleType(vaultRole.K8sRoleType) {
+	case "Role":
 		objectMeta.Namespace = namespace
 		roleConfig := &rbacv1.Role{
 			ObjectMeta: objectMeta,
@@ -110,7 +117,7 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 		}
 		return thisOwnerRef, err
 
-	case "clusterrole":
+	case "ClusterRole":
 		roleConfig := &rbacv1.ClusterRole{
 			ObjectMeta: objectMeta,
 			Rules:      roleRules,
@@ -129,10 +136,10 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 
 func (c *client) deleteRole(ctx context.Context, namespace, name, roleType string) error {
 	var err error
-	switch strings.ToLower(roleType) {
-	case "role":
+	switch makeRoleType(roleType) {
+	case "Role":
 		err = c.k8s.RbacV1().Roles(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	case "clusterrole":
+	case "ClusterRole":
 		err = c.k8s.RbacV1().ClusterRoles().Delete(ctx, name, metav1.DeleteOptions{})
 	default:
 		return fmt.Errorf("unsupported role type '%s'", roleType)
@@ -148,9 +155,10 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 		APIVersion: "rbac.authorization.k8s.io/v1",
 		Name:       name,
 	}
+	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
-		Labels:      vaultRole.Metadata.Labels,
+		Labels:      labels,
 		Annotations: vaultRole.Metadata.Annotations,
 	}
 	if ownerRef != nil {
@@ -163,8 +171,9 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 			Namespace: namespace,
 		},
 	}
+	kind := makeRoleType(vaultRole.K8sRoleType)
 	roleRef := rbacv1.RoleRef{
-		Kind: vaultRole.K8sRoleType,
+		Kind: kind,
 		Name: k8sRoleName,
 	}
 
@@ -221,4 +230,25 @@ func makeRules(rules string) ([]rbacv1.PolicyRule, error) {
 		return nil, err
 	}
 	return policyRules.Rules, nil
+}
+
+func makeRoleType(roleType string) string {
+	switch strings.ToLower(roleType) {
+	case "role":
+		return "Role"
+	case "clusterrole":
+		return "ClusterRole"
+	default:
+		return roleType
+	}
+}
+
+func combineMaps(maps ...map[string]string) map[string]string {
+	newMap := make(map[string]string)
+	for _, m := range maps {
+		for k, v := range m {
+			newMap[k] = v
+		}
+	}
+	return newMap
 }
