@@ -155,7 +155,16 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Role type", func(t *testing.T) {
+		metadata := map[string]interface{}{
+			"labels": map[string]interface{}{
+				"environment": "testing",
+			},
+			"annotations": map[string]interface{}{
+				"tested": "today",
+			},
+		}
 		roleConfig := map[string]interface{}{
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-role-list-pods",
 			"kubernetes_role_type":          "role",
@@ -163,7 +172,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           map[string]interface{}{},
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          "",
 			"kubernetes_role_name":          "test-role-list-pods",
@@ -178,7 +187,16 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 	})
 
 	t.Run("ClusterRole type", func(t *testing.T) {
+		metadata := map[string]interface{}{
+			"labels": map[string]interface{}{
+				"environment": "staging",
+			},
+			"annotations": map[string]interface{}{
+				"tested": "tomrrow",
+			},
+		}
 		roleConfig := map[string]interface{}{
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
 			"kubernetes_role_type":          "Clusterrole",
@@ -186,7 +204,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           map[string]interface{}{},
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          "",
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
@@ -235,7 +253,16 @@ func TestCreds_generated_role_rules(t *testing.T) {
 ]`
 
 	t.Run("Role type", func(t *testing.T) {
+		metadata := map[string]interface{}{
+			"labels": map[string]interface{}{
+				"environment": "testing",
+			},
+			"annotations": map[string]interface{}{
+				"tested": "today",
+			},
+		}
 		roleConfig := map[string]interface{}{
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_type":          "RolE",
@@ -243,7 +270,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           map[string]interface{}{},
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_name":          "",
@@ -258,7 +285,18 @@ func TestCreds_generated_role_rules(t *testing.T) {
 	})
 
 	t.Run("ClusterRole type", func(t *testing.T) {
+		metadata := map[string]interface{}{
+			"labels": map[string]interface{}{
+				"environment": "staging",
+				"asdf":        "123",
+			},
+			"annotations": map[string]interface{}{
+				"tested":  "tomorrow",
+				"checked": "again",
+			},
+		}
 		roleConfig := map[string]interface{}{
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"generated_role_rules":          roleRulesJSON,
 			"kubernetes_role_type":          "clusterRole",
@@ -266,7 +304,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           map[string]interface{}{},
+			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
 			"generated_role_rules":          roleRulesJSON,
 			"kubernetes_role_name":          "",

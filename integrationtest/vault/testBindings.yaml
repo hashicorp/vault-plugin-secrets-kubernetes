@@ -14,6 +14,9 @@ subjects:
 - kind: ServiceAccount
   name: vault
   namespace: test
+- kind: ServiceAccount
+  name: super-jwt
+  namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -29,6 +32,19 @@ subjects:
   namespace: test
 - kind: ServiceAccount
   name: vault
+  namespace: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: test-capabilities
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: test-capabilities
+subjects:
+- kind: ServiceAccount
+  name: super-jwt
   namespace: test
 ---
 apiVersion: rbac.authorization.k8s.io/v1

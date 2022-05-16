@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,21 +24,12 @@ import (
 // See `make setup-integration-test` for manual testing.
 func TestMain(m *testing.M) {
 	if os.Getenv("INTEGRATION_TESTS") != "" {
-		cmd := exec.Command("kubectl", "exec", "--namespace=test", "vault-0", "--", "cat", "/var/run/secrets/kubernetes.io/serviceaccount/token")
-		out := &bytes.Buffer{}
-		cmd.Stdout = out
-		cmd.Stderr = out
-		if err := cmd.Run(); err != nil {
-			fmt.Println(out.String())
-			fmt.Println(err)
-			os.Exit(1)
-		}
 		os.Setenv("VAULT_ADDR", "http://127.0.0.1:38300")
 		os.Setenv("VAULT_TOKEN", "root")
-		os.Setenv("KUBERNETES_JWT", out.String())
+		os.Setenv("KUBERNETES_JWT", getVaultJWT())
 		os.Setenv("KUBERNETES_CA", getK8sCA())
 		os.Setenv("KUBE_HOST", getKubeHost(os.Getenv("KIND_CLUSTER_NAME")))
-		fmt.Printf("hello kube_host %s\n", os.Getenv("KUBE_HOST"))
+		os.Setenv("SUPER_JWT", getSuperJWT())
 		os.Exit(m.Run())
 	}
 }
@@ -228,6 +220,20 @@ func runCmd(command string) string {
 		panic(fmt.Sprintf("Got unexpected output: %s, err = %s", out.String(), err))
 	}
 	return out.String()
+}
+
+func getVaultJWT() string {
+	return runCmd("kubectl exec --namespace=test vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/token")
+}
+
+func getSuperJWT() string {
+	name := runCmd("kubectl --namespace=test get serviceaccount super-jwt -o jsonpath={.secrets[0].name}")
+	b64token := runCmd(fmt.Sprintf("kubectl --namespace=test get secrets %s -o jsonpath={.data.token}", name))
+	token, err := base64.URLEncoding.DecodeString(b64token)
+	if err != nil {
+		panic(err)
+	}
+	return string(token)
 }
 
 func getK8sCA() string {
