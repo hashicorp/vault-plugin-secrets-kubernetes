@@ -26,6 +26,31 @@ rules:
   - create
   - delete
 ---
+## This cluster role is for testing the WAL + ownerRef rollback of orphaned k8s
+## objects created during a creds/ call (it's missing serviceaccounts
+## privileges)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-secrets-abilities-broken
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts/token
+  verbs:
+  - create
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  - clusterrolebindings
+  - clusterroles
+  verbs:
+  - create
+  - delete
+---
 ## This cluster role is to allow tests to inspect k8s objects
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -37,6 +62,7 @@ rules:
   - serviceaccounts
   verbs:
   - get
+  - list
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -46,6 +72,7 @@ rules:
   - clusterroles
   verbs:
   - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

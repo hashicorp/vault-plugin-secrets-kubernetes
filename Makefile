@@ -55,6 +55,7 @@ setup-integration-test: teardown-integration-test vault-image
 	helm install vault vault --repo https://helm.releases.hashicorp.com --version=0.19.0 \
 		--wait --timeout=5m \
 		--namespace=test \
+		--set server.logLevel=debug \
 		--set server.dev.enabled=true \
 		--set server.image.tag=dev \
 		--set server.image.pullPolicy=Never \

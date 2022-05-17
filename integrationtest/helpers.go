@@ -49,7 +49,7 @@ func verifyCredsResponseGenerated(t *testing.T, result *api.Secret, namespace st
 	t.Helper()
 	assert.Equal(t, leaseDuration, result.LeaseDuration)
 	assert.Equal(t, false, result.Renewable)
-	assert.Contains(t, result.Data["service_account_name"], "v-token-testrole")
+	assert.Contains(t, result.Data["service_account_name"], "v-token-")
 	assert.Equal(t, namespace, result.Data["service_account_namespace"])
 }
 
@@ -303,15 +303,15 @@ func testRoleType(t *testing.T, client *api.Client, mountPath string, roleConfig
 func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, roleConfig, expectedRoleResponse map[string]interface{}) {
 	t.Helper()
 
-	_, err := client.Logical().Write(mountPath+"/roles/testrole", roleConfig)
+	_, err := client.Logical().Write(mountPath+"/roles/clusterrole", roleConfig)
 	require.NoError(t, err)
 
-	roleResult, err := client.Logical().Read(mountPath + "/roles/testrole")
+	roleResult, err := client.Logical().Read(mountPath + "/roles/clusterrole")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedRoleResponse, roleResult.Data)
 
 	// Generate creds with a RoleBinding
-	result1, err := client.Logical().Write(mountPath+"/creds/testrole", map[string]interface{}{
+	result1, err := client.Logical().Write(mountPath+"/creds/clusterrole", map[string]interface{}{
 		"kubernetes_namespace": "test",
 		"cluster_role_binding": false,
 		"ttl":                  "2h",
@@ -330,7 +330,7 @@ func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, rol
 	testRoleBindingToken(t, result1)
 
 	// Generate creds with a ClusterRoleBinding
-	result2, err := client.Logical().Write(mountPath+"/creds/testrole", map[string]interface{}{
+	result2, err := client.Logical().Write(mountPath+"/creds/clusterrole", map[string]interface{}{
 		"kubernetes_namespace": "test",
 		"cluster_role_binding": true,
 		"ttl":                  "2h",
@@ -348,25 +348,25 @@ func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, rol
 	// but listing deployments should be denied
 	testClusterRoleBindingToken(t, result2)
 
-	leases, err := client.Logical().List("sys/leases/lookup/" + mountPath + "/creds/testrole/")
+	leases, err := client.Logical().List("sys/leases/lookup/" + mountPath + "/creds/clusterrole/")
 	assert.NoError(t, err)
 	assert.Len(t, leases.Data["keys"], 2)
 
 	// Clean up leases and delete the role
-	err = client.Sys().RevokePrefix(mountPath + "/creds/testrole")
+	err = client.Sys().RevokePrefix(mountPath + "/creds/clusterrole")
 	assert.NoError(t, err)
 
-	noLeases, err := client.Logical().List("sys/leases/lookup/" + mountPath + "/creds/testrole/")
+	noLeases, err := client.Logical().List("sys/leases/lookup/" + mountPath + "/creds/clusterrole/")
 	assert.NoError(t, err)
 	assert.Empty(t, noLeases)
 
 	testTokenRevoked(t, result1)
 	testTokenRevoked(t, result2)
 
-	_, err = client.Logical().Delete(mountPath + "/roles/testrole")
+	_, err = client.Logical().Delete(mountPath + "/roles/clusterrole")
 	assert.NoError(t, err)
 
-	result, err := client.Logical().Read(mountPath + "/roles/testrole")
+	result, err := client.Logical().Read(mountPath + "/roles/clusterrole")
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

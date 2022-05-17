@@ -30,6 +30,7 @@ func TestMain(m *testing.M) {
 		os.Setenv("KUBERNETES_CA", getK8sCA())
 		os.Setenv("KUBE_HOST", getKubeHost(os.Getenv("KIND_CLUSTER_NAME")))
 		os.Setenv("SUPER_JWT", getSuperJWT())
+		os.Setenv("BROKEN_JWT", getBrokenJWT())
 		os.Exit(m.Run())
 	}
 }
@@ -228,6 +229,16 @@ func getVaultJWT() string {
 
 func getSuperJWT() string {
 	name := runCmd("kubectl --namespace=test get serviceaccount super-jwt -o jsonpath={.secrets[0].name}")
+	b64token := runCmd(fmt.Sprintf("kubectl --namespace=test get secrets %s -o jsonpath={.data.token}", name))
+	token, err := base64.URLEncoding.DecodeString(b64token)
+	if err != nil {
+		panic(err)
+	}
+	return string(token)
+}
+
+func getBrokenJWT() string {
+	name := runCmd("kubectl --namespace=test get serviceaccount broken-jwt -o jsonpath={.secrets[0].name}")
 	b64token := runCmd(fmt.Sprintf("kubectl --namespace=test get secrets %s -o jsonpath={.data.token}", name))
 	token, err := base64.URLEncoding.DecodeString(b64token)
 	if err != nil {
