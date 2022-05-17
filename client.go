@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ryboe/q"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -59,7 +58,6 @@ func (c *client) createToken(ctx context.Context, namespace, name string, ttl ti
 	if err != nil {
 		return nil, err
 	}
-	q.Q("resp is", resp) // DEBUG
 
 	c.k8s.CoreV1().ServiceAccounts(namespace)
 	return &resp.Status, nil
@@ -185,7 +183,6 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 		}
 		resp, err := c.k8s.RbacV1().ClusterRoleBindings().Create(ctx, roleConfig, metav1.CreateOptions{})
 		if resp != nil {
-			q.Q(resp) // DEBUG
 			thisOwnerRef.Kind = "ClusterRoleBinding"
 			thisOwnerRef.UID = resp.UID
 		}
@@ -200,7 +197,6 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 	}
 	resp, err := c.k8s.RbacV1().RoleBindings(namespace).Create(ctx, roleConfig, metav1.CreateOptions{})
 	if resp != nil {
-		q.Q(resp) // DEBUG
 		thisOwnerRef.Kind = "RoleBinding"
 		thisOwnerRef.UID = resp.UID
 	}

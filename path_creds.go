@@ -2,7 +2,6 @@ package kubesecrets
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
-	"github.com/ryboe/q"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -79,7 +77,7 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 	}
 
 	if roleEntry == nil {
-		return nil, errors.New("error retrieving role: role is nil")
+		return logical.ErrorResponse(fmt.Sprintf("role '%s' does not exist", roleName)), nil
 	}
 
 	request := &credsRequest{
@@ -87,7 +85,7 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 	}
 	requestNamespace, ok := d.GetOk("kubernetes_namespace")
 	if !ok {
-		return nil, errors.New("'kubernetes_namespace' is required")
+		return logical.ErrorResponse("'kubernetes_namespace' is required"), nil
 	}
 	request.Namespace = requestNamespace.(string)
 
@@ -100,10 +98,10 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 
 	// Validate the request
 	if !strutil.StrListContains(roleEntry.K8sNamespaces, "*") && !strutil.StrListContains(roleEntry.K8sNamespaces, request.Namespace) {
-		return nil, fmt.Errorf("kubernetes_namespace '%s' is not present in role's allowed_kubernetes_namespaces", request.Namespace)
+		return logical.ErrorResponse(fmt.Sprintf("kubernetes_namespace '%s' is not present in role's allowed_kubernetes_namespaces", request.Namespace)), nil
 	}
 	if request.ClusterRoleBinding && makeRoleType(roleEntry.K8sRoleType) == "Role" {
-		return nil, fmt.Errorf("a ClusterRoleBinding cannot ref a Role")
+		return logical.ErrorResponse("a ClusterRoleBinding cannot ref a Role"), nil
 	}
 
 	return b.createCreds(ctx, req, roleEntry, request)
@@ -221,11 +219,11 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		return nil, fmt.Errorf("one of service_account_name, kubernetes_role_name, or generated_role_rules must be set")
 	}
 
-	// Delete any WALs entries that were created
+	// Delete any WALs entries that were created, since all the k8s objects were
+	// created successfully (no need to rollback anymore)
 	var errors *multierror.Error
 	for _, walId := range []string{roleWALId, bindingWALId} {
 		if walId != "" {
-			q.Q("deleting walId", walId) // DEBUG
 			if err := framework.DeleteWAL(ctx, req.Storage, walId); err != nil {
 				errors = multierror.Append(errors, fmt.Errorf("error deleting WAL: %w", err))
 			}
@@ -240,10 +238,8 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		"service_account_name":      serviceAccountName,
 		"service_account_token":     token,
 	}, map[string]interface{}{
-		// TODO(tvoran): i think the internal data is whatever we need to
-		// cleanup on revoke (service_account_name, role, role_binding).
-		// decide whether to store "role" here so we can lookup all the leases
-		// when a role is deleted
+		// the internal data is whatever we need to cleanup on revoke
+		// (service_account_name, role, role_binding).
 		"role":                      reqPayload.RoleName,
 		"service_account_namespace": reqPayload.Namespace,
 		"cluster_role_binding":      reqPayload.ClusterRoleBinding,

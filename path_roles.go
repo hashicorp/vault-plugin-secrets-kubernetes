@@ -253,7 +253,6 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 func (b *backend) pathRolesDelete(ctx context.Context, req *logical.Request, d *framework.FieldData) (resp *logical.Response, err error) {
 	rName := d.Get("name").(string)
-	// TODO(tvoran): call revoke on all associated leases too?
 	if err := req.Storage.Delete(ctx, rolesPath+rName); err != nil {
 		return nil, err
 	}
