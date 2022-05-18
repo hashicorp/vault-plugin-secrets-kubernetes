@@ -28,16 +28,17 @@ func TestCreds_wal_rollback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mountPath, umount := mountHelper(t, client)
-	defer umount()
+	t.Run("Role type takes 10 minutes", func(t *testing.T) {
+		t.Parallel()
+		mountPath, umount := mountHelper(t, client)
+		defer umount()
 
-	// create default config
-	_, err = client.Logical().Write(mountPath+"/config", map[string]interface{}{
-		"service_account_jwt": os.Getenv("BROKEN_JWT"),
-	})
-	require.NoError(t, err)
+		// create default config
+		_, err = client.Logical().Write(mountPath+"/config", map[string]interface{}{
+			"service_account_jwt": os.Getenv("BROKEN_JWT"),
+		})
+		require.NoError(t, err)
 
-	t.Run("Role type takes 2 minutes", func(t *testing.T) {
 		roleRulesYAML := `rules:
 - apiGroups: [""]
   resources: ["pods"]
@@ -100,7 +101,17 @@ func TestCreds_wal_rollback(t *testing.T) {
 		checkObjects(t, roleConfig, false, false, 15*time.Minute)
 	})
 
-	t.Run("ClusterRole type takes 2 minutes", func(t *testing.T) {
+	t.Run("ClusterRole type takes 10 minutes", func(t *testing.T) {
+		t.Parallel()
+		mountPath, umount := mountHelper(t, client)
+		defer umount()
+
+		// create default config
+		_, err = client.Logical().Write(mountPath+"/config", map[string]interface{}{
+			"service_account_jwt": os.Getenv("BROKEN_JWT"),
+		})
+		require.NoError(t, err)
+
 		roleRulesJSON := `"rules": [
 {
 	"apiGroups": [

@@ -77,4 +77,4 @@ jobs:
       - run: make setup-integration-test
       - env:
           INTEGRATION_TESTS: true
-        run: make integration-test
+        run: make integration-test TESTARGS="-v"
