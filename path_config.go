@@ -160,7 +160,7 @@ func (b *backend) pathConfigDelete(ctx context.Context, req *logical.Request, da
 		b.reset()
 	}
 
-	return nil, nil
+	return nil, err
 }
 
 // configWithDynamicValues fetches the kubeConfig from storage and sets any

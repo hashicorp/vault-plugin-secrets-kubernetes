@@ -65,8 +65,6 @@ setup-integration-test: teardown-integration-test vault-image
 	kubectl apply --namespace=test -f integrationtest/vault/testRoles.yaml
 	kubectl apply --namespace=test -f integrationtest/vault/testServiceAccounts.yaml
 	kubectl apply --namespace=test -f integrationtest/vault/testBindings.yaml
-	# kubectl create clusterrole k8s-clusterrole --verb=create --resource=serviceaccounts/token
-	# kubectl create clusterrolebinding vault-crb --clusterrole=k8s-clusterrole --serviceaccount=test:vault
 
 	kubectl delete --namespace=test pod vault-0
 	kubectl wait --namespace=test --for=condition=Ready --timeout=5m pod -l app.kubernetes.io/name=vault

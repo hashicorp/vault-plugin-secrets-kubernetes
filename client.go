@@ -52,7 +52,6 @@ func (c *client) createToken(ctx context.Context, namespace, name string, ttl ti
 	resp, err := c.k8s.CoreV1().ServiceAccounts(namespace).CreateToken(ctx, name, &authenticationv1.TokenRequest{
 		Spec: authenticationv1.TokenRequestSpec{
 			ExpirationSeconds: &intTTL,
-			// Audiences:         audiences,
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {

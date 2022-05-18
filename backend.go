@@ -94,8 +94,7 @@ func newBackend() (*backend, error) {
 		Secrets: []*framework.Secret{
 			b.kubeServiceAccount(),
 		},
-		WALRollback:       b.walRollback,
-		WALRollbackMinAge: 2 * time.Minute,
+		WALRollback: b.walRollback,
 	}
 
 	return b, nil

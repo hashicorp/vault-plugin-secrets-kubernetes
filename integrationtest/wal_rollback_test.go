@@ -37,26 +37,12 @@ func TestCreds_wal_rollback(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	roleRulesYAML := `rules:
+	t.Run("Role type takes 2 minutes", func(t *testing.T) {
+		roleRulesYAML := `rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["list"]`
 
-	roleRulesJSON := `"rules": [
-{
-	"apiGroups": [
-		""
-	],
-	"resources": [
-		"pods"
-	],
-	"verbs": [
-		"list"
-	]
-}
-]`
-
-	t.Run("Role type takes 2 minutes", func(t *testing.T) {
 		metadata := map[string]interface{}{
 			"labels": map[string]interface{}{
 				"environment": "testing",
@@ -109,12 +95,26 @@ func TestCreds_wal_rollback(t *testing.T) {
 
 		checkObjects(t, roleConfig, false, true, 30*time.Second)
 
-		// The backend's WAL min age is 2 minutes. After that the k8s objects
+		// The backend's WAL min age is 10 minutes. After that the k8s objects
 		// should be cleaned up.
-		checkObjects(t, roleConfig, false, false, 5*time.Minute)
+		checkObjects(t, roleConfig, false, false, 15*time.Minute)
 	})
 
 	t.Run("ClusterRole type takes 2 minutes", func(t *testing.T) {
+		roleRulesJSON := `"rules": [
+{
+	"apiGroups": [
+		""
+	],
+	"resources": [
+		"pods"
+	],
+	"verbs": [
+		"list"
+	]
+}
+]`
+
 		metadata := map[string]interface{}{
 			"labels": map[string]interface{}{
 				"environment": "staging",
@@ -168,9 +168,9 @@ func TestCreds_wal_rollback(t *testing.T) {
 
 		checkObjects(t, roleConfig, true, true, 30*time.Second)
 
-		// The backend's WAL min age is 2 minutes. After that the k8s objects
+		// The backend's WAL min age is 10 minutes. After that the k8s objects
 		// should be cleaned up.
-		checkObjects(t, roleConfig, true, false, 5*time.Minute)
+		checkObjects(t, roleConfig, true, false, 15*time.Minute)
 	})
 }
 

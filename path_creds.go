@@ -35,6 +35,12 @@ type credsRequest struct {
 	RoleName           string        `json:"role_name"`
 }
 
+// The fields in nameMetadata are used for templated name generation
+type nameMetadata struct {
+	DisplayName string
+	RoleName    string
+}
+
 func (b *backend) pathCredentials() *framework.Path {
 	return &framework.Path{
 		Pattern: pathCreds + framework.GenericNameRegex("name"),
@@ -173,7 +179,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 			return nil, err
 		}
 
-		err = createServiceAccount(ctx, client, req.Storage, reqPayload.Namespace, genName, role, ownerRef)
+		err = createServiceAccount(ctx, client, reqPayload.Namespace, genName, role, ownerRef)
 		if err != nil {
 			return nil, err
 		}
@@ -195,12 +201,12 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 			return nil, err
 		}
 
-		err = createRoleBinding(ctx, client, req.Storage, reqPayload.Namespace, genName, genName, reqPayload.ClusterRoleBinding, role, ownerRef)
+		err = createRoleBinding(ctx, client, reqPayload.Namespace, genName, genName, reqPayload.ClusterRoleBinding, role, ownerRef)
 		if err != nil {
 			return nil, err
 		}
 
-		err = createServiceAccount(ctx, client, req.Storage, reqPayload.Namespace, genName, role, ownerRef)
+		err = createServiceAccount(ctx, client, reqPayload.Namespace, genName, role, ownerRef)
 		if err != nil {
 			return nil, err
 		}
@@ -257,11 +263,6 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	return resp, nil
 }
 
-type nameMetadata struct {
-	DisplayName string
-	RoleName    string
-}
-
 func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, error) {
 	b.lock.RLock()
 	unlockFunc := b.lock.RUnlock
@@ -295,7 +296,7 @@ func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, er
 }
 
 // create service account
-func createServiceAccount(ctx context.Context, client *client, s logical.Storage, namespace, name string, vaultRole *roleEntry, ownerRef metav1.OwnerReference) error {
+func createServiceAccount(ctx context.Context, client *client, namespace, name string, vaultRole *roleEntry, ownerRef metav1.OwnerReference) error {
 	_, err := client.createServiceAccount(ctx, namespace, name, vaultRole, ownerRef)
 	if err != nil {
 		return fmt.Errorf("failed to create service account '%s/%s': %s", namespace, name, err)
@@ -325,7 +326,7 @@ func createRoleBindingWithWAL(ctx context.Context, client *client, s logical.Sto
 	return walId, ownerRef, nil
 }
 
-func createRoleBinding(ctx context.Context, client *client, s logical.Storage, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry, ownerRef metav1.OwnerReference) error {
+func createRoleBinding(ctx context.Context, client *client, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry, ownerRef metav1.OwnerReference) error {
 	_, err := client.createRoleBinding(ctx, namespace, name, k8sRoleName, isClusterRoleBinding, vaultRole, &ownerRef)
 	if err != nil {
 		return fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", name, k8sRoleName, err)
