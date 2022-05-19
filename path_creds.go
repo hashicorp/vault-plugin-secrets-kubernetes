@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
+	"github.com/mitchellh/mapstructure"
+	josejwt "gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -281,6 +283,18 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	if role.TokenMaxTTL > 0 {
 		resp.Secret.MaxTTL = role.TokenMaxTTL
 	}
+
+	createdTokenTTL, err := getTokenTTL(token)
+	switch {
+	case err != nil:
+		b.Logger().Warn(fmt.Sprintf("failed to read TTL of created Kubernetes token for %s/%s: %s", reqPayload.Namespace, genName, err))
+	case createdTokenTTL > theTTL:
+		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service accout token TTL %v is greater than the Vault lease TTL %v", createdTokenTTL, theTTL))
+	case createdTokenTTL < theTTL:
+		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service accout token TTL %v is less than the Vault lease TTL %v; capping the lease TTL accordingly", createdTokenTTL, theTTL))
+		resp.Secret.TTL = createdTokenTTL
+	}
+
 	if len(respWarning) > 0 {
 		resp.Warnings = respWarning
 	}
@@ -289,17 +303,12 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 }
 
 func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, error) {
-	b.lock.RLock()
-	unlockFunc := b.lock.RUnlock
-	defer func() { unlockFunc() }()
+	b.lock.Lock()
+	defer b.lock.Unlock()
 
 	if b.client != nil {
 		return b.client, nil
 	}
-
-	b.lock.RUnlock()
-	b.lock.Lock()
-	unlockFunc = b.lock.Unlock
 
 	config, err := b.configWithDynamicValues(ctx, s)
 	if err != nil {
@@ -376,4 +385,25 @@ func createRoleWithWAL(ctx context.Context, client *client, s logical.Storage, n
 	}
 
 	return walId, ownerRef, nil
+}
+
+func getTokenTTL(token string) (time.Duration, error) {
+	parsed, err := josejwt.ParseSigned(token)
+	if err != nil {
+		return 0, err
+	}
+	claims := map[string]interface{}{}
+	err = parsed.UnsafeClaimsWithoutVerification(&claims)
+	if err != nil {
+		return 0, err
+	}
+	sa := struct {
+		Expiration int64 `mapstructure:"exp"`
+		IssuedAt   int64 `mapstructure:"iat"`
+	}{}
+	err = mapstructure.Decode(claims, &sa)
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(sa.Expiration-sa.IssuedAt) * time.Second, nil
 }

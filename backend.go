@@ -29,7 +29,7 @@ var (
 // backend wraps the backend framework and adds a map for storing key value pairs
 type backend struct {
 	*framework.Backend
-	lock   sync.RWMutex
+	lock   sync.Mutex
 	client *client
 
 	// localSATokenReader caches the service account token in memory.

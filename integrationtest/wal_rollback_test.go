@@ -28,7 +28,7 @@ func TestCreds_wal_rollback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("Role type takes 10 minutes", func(t *testing.T) {
+	t.Run("generated_role_rules (takes 10 minutes)", func(t *testing.T) {
 		t.Parallel()
 		mountPath, umount := mountHelper(t, client)
 		defer umount()
@@ -68,24 +68,24 @@ func TestCreds_wal_rollback(t *testing.T) {
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_name":          "",
 			"kubernetes_role_type":          "Role",
-			"name":                          "testrole",
+			"name":                          "walrole",
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
 			"token_default_ttl":             oneHour,
 		}
 
-		_, err := client.Logical().Write(mountPath+"/roles/testrole", roleConfig)
+		_, err := client.Logical().Write(mountPath+"/roles/walrole", roleConfig)
 		require.NoError(t, err)
 
-		roleResult, err := client.Logical().Read(mountPath + "/roles/testrole")
+		roleResult, err := client.Logical().Read(mountPath + "/roles/walrole")
 		assert.NoError(t, err)
 		assert.Equal(t, expectedRoleResponse, roleResult.Data)
 
 		// This will fail because it can't create a ServiceAccount. Wait for the
 		// WALRollbackMinAge, then verify that the objects aren't around by
 		// using the additional metadata.labels that were passed in.
-		credsResponse, err := client.Logical().Write(mountPath+"/creds/testrole", map[string]interface{}{
+		credsResponse, err := client.Logical().Write(mountPath+"/creds/walrole", map[string]interface{}{
 			"kubernetes_namespace": "test",
 			"cluster_role_binding": false,
 			"ttl":                  "2h",
@@ -101,7 +101,7 @@ func TestCreds_wal_rollback(t *testing.T) {
 		checkObjects(t, roleConfig, false, false, 15*time.Minute)
 	})
 
-	t.Run("ClusterRole type takes 10 minutes", func(t *testing.T) {
+	t.Run("kubernetes_role_name (takes 10 minutes)", func(t *testing.T) {
 		t.Parallel()
 		mountPath, umount := mountHelper(t, client)
 		defer umount()
@@ -112,25 +112,11 @@ func TestCreds_wal_rollback(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		roleRulesJSON := `"rules": [
-{
-	"apiGroups": [
-		""
-	],
-	"resources": [
-		"pods"
-	],
-	"verbs": [
-		"list"
-	]
-}
-]`
-
 		metadata := map[string]interface{}{
 			"labels": map[string]interface{}{
 				"environment": "staging",
 				"test":        "wal_rollback",
-				"type":        "clusterrole",
+				"type":        "clusterrolebinding",
 			},
 			"annotations": map[string]interface{}{
 				"tested":  "tomorrow",
@@ -140,35 +126,35 @@ func TestCreds_wal_rollback(t *testing.T) {
 		roleConfig := map[string]interface{}{
 			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
-			"generated_role_rules":          roleRulesJSON,
-			"kubernetes_role_type":          "clusterRole",
+			"kubernetes_role_name":          "test-cluster-role-list-pods",
+			"kubernetes_role_type":          "ClusterRole",
 			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
 			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
-			"generated_role_rules":          roleRulesJSON,
-			"kubernetes_role_name":          "",
+			"generated_role_rules":          "",
+			"kubernetes_role_name":          "test-cluster-role-list-pods",
 			"kubernetes_role_type":          "ClusterRole",
-			"name":                          "clustertestrole",
+			"name":                          "walrolebinding",
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
 			"token_default_ttl":             oneHour,
 		}
 
-		_, err := client.Logical().Write(mountPath+"/roles/clustertestrole", roleConfig)
+		_, err := client.Logical().Write(mountPath+"/roles/walrolebinding", roleConfig)
 		require.NoError(t, err)
 
-		roleResult, err := client.Logical().Read(mountPath + "/roles/clustertestrole")
+		roleResult, err := client.Logical().Read(mountPath + "/roles/walrolebinding")
 		assert.NoError(t, err)
 		assert.Equal(t, expectedRoleResponse, roleResult.Data)
 
 		// This will fail because it can't create a ServiceAccount. Wait for the
 		// WALRollbackMinAge, then verify that the objects aren't around by
 		// using the additional metadata.labels that were passed in.
-		credsResponse, err := client.Logical().Write(mountPath+"/creds/clustertestrole", map[string]interface{}{
+		credsResponse, err := client.Logical().Write(mountPath+"/creds/walrolebinding", map[string]interface{}{
 			"kubernetes_namespace": "test",
 			"cluster_role_binding": true,
 			"ttl":                  "2h",
@@ -190,6 +176,10 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 
 	k8sClient := newK8sClient(t, os.Getenv("SUPER_JWT"))
 	roleType := strings.ToLower(roleConfig["kubernetes_role_type"].(string))
+	existingRole := ""
+	if value, ok := roleConfig["kubernetes_role_name"]; ok {
+		existingRole = value.(string)
+	}
 
 	// Query by labels since we may not know the name
 	l := makeExpectedLabels(t, roleConfig["additional_metadata"].(map[string]interface{}))
@@ -201,13 +191,15 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 
 	// Check the k8s objects that should have been created (all but the ServiceAccount)
 	operation := func() error {
-		exists, err := checkRoleExists(k8sClient, listOptions, roleType)
-		require.NoError(t, err)
-		if exists != shouldExist {
-			return fmt.Errorf("%s exists (%v) but should be (%v)", roleType, exists, shouldExist)
+		if existingRole == "" {
+			exists, err := checkRoleExists(k8sClient, listOptions, roleType)
+			require.NoError(t, err)
+			if exists != shouldExist {
+				return fmt.Errorf("%s exists (%v) but should be (%v)", roleType, exists, shouldExist)
+			}
 		}
 
-		exists, err = checkRoleBindingExists(k8sClient, listOptions, isClusterBinding)
+		exists, err := checkRoleBindingExists(k8sClient, listOptions, isClusterBinding)
 		require.NoError(t, err)
 		if exists != shouldExist {
 			return fmt.Errorf("binding (cluster %v) exists (%v) but should be (%v)", isClusterBinding, exists, shouldExist)
