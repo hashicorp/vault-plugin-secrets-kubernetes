@@ -21,7 +21,7 @@ type roleEntry struct {
 	Name               string        `json:"name" mapstructure:"name"`
 	K8sNamespaces      []string      `json:"allowed_kubernetes_namespaces" mapstructure:"allowed_kubernetes_namespaces"`
 	TokenMaxTTL        time.Duration `json:"token_max_ttl" mapstructure:"token_max_ttl"`
-	TokenTTL           time.Duration `json:"token_ttl" mapstructure:"token_ttl"`
+	TokenDefaultTTL    time.Duration `json:"token_default_ttl" mapstructure:"token_default_ttl"`
 	ServiceAccountName string        `json:"service_account_name" mapstructure:"service_account_name"`
 	K8sRoleName        string        `json:"kubernetes_role_name" mapstructure:"kubernetes_role_name"`
 	K8sRoleType        string        `json:"kubernetes_role_type" mapstructure:"kubernetes_role_type"`
@@ -41,7 +41,7 @@ func (r *roleEntry) toResponseData() (map[string]interface{}, error) {
 		return nil, err
 	}
 	// Format the TTLs as seconds
-	respData["token_ttl"] = r.TokenTTL.Seconds()
+	respData["token_default_ttl"] = r.TokenDefaultTTL.Seconds()
 	respData["token_max_ttl"] = r.TokenMaxTTL.Seconds()
 
 	return respData, nil
@@ -67,7 +67,7 @@ func (b *backend) pathRoles() []*framework.Path {
 					Description: "The maximum valid ttl for generated Kubernetes tokens. If not set or set to 0, will use system default.",
 					Required:    false,
 				},
-				"token_ttl": {
+				"token_default_ttl": {
 					Type:        framework.TypeDurationSecond,
 					Description: "The default ttl for generated Kubernetes service accounts. If not set or set to 0, will use system default.",
 					Required:    false,
@@ -189,8 +189,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	if tokenMaxTTLRaw, ok := d.GetOk("token_max_ttl"); ok {
 		entry.TokenMaxTTL = time.Duration(tokenMaxTTLRaw.(int)) * time.Second
 	}
-	if tokenTTLRaw, ok := d.GetOk("token_ttl"); ok {
-		entry.TokenTTL = time.Duration(tokenTTLRaw.(int)) * time.Second
+	if tokenTTLRaw, ok := d.GetOk("token_default_ttl"); ok {
+		entry.TokenDefaultTTL = time.Duration(tokenTTLRaw.(int)) * time.Second
 	}
 	if svcAccount, ok := d.GetOk("service_account_name"); ok {
 		entry.ServiceAccountName = svcAccount.(string)
@@ -235,8 +235,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		}
 	}
 
-	if entry.TokenMaxTTL > 0 && entry.TokenTTL > entry.TokenMaxTTL {
-		return logical.ErrorResponse("token_ttl %s cannot be greater than token_max_ttl %s", entry.TokenTTL, entry.TokenMaxTTL), nil
+	if entry.TokenMaxTTL > 0 && entry.TokenDefaultTTL > entry.TokenMaxTTL {
+		return logical.ErrorResponse("token_default_ttl %s cannot be greater than token_max_ttl %s", entry.TokenDefaultTTL, entry.TokenMaxTTL), nil
 	}
 
 	if err := setRole(ctx, req.Storage, name, entry); err != nil {

@@ -149,8 +149,8 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	switch {
 	case reqPayload.TTL > 0:
 		theTTL = reqPayload.TTL
-	case role.TokenTTL > 0:
-		theTTL = role.TokenTTL
+	case role.TokenDefaultTTL > 0:
+		theTTL = role.TokenDefaultTTL
 	default:
 		theTTL = b.System().DefaultLeaseTTL()
 	}

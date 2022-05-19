@@ -113,7 +113,7 @@ func TestRole(t *testing.T) {
 	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
 		"allowed_kubernetes_namespaces": []string{"*"},
 		"generated_role_rules":          sampleRules,
-		"token_ttl":                     "1h",
+		"token_default_ttl":             "1h",
 		"token_max_ttl":                 "24h",
 	})
 	assert.NoError(t, err)
@@ -130,14 +130,14 @@ func TestRole(t *testing.T) {
 		"name_template":                 "",
 		"service_account_name":          "",
 		"token_max_ttl":                 oneDay,
-		"token_ttl":                     oneHour,
+		"token_default_ttl":             oneHour,
 	}, result.Data)
 
 	// update
 	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
 		"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 		"additional_metadata":           sampleMetadata,
-		"token_ttl":                     "30m",
+		"token_default_ttl":             "30m",
 	})
 
 	result, err = client.Logical().Read(path + "/roles/testrole")
@@ -152,7 +152,7 @@ func TestRole(t *testing.T) {
 		"name_template":                 "",
 		"service_account_name":          "",
 		"token_max_ttl":                 oneDay,
-		"token_ttl":                     thirtyMinutes,
+		"token_default_ttl":             thirtyMinutes,
 	}, result.Data)
 
 	result, err = client.Logical().List(path + "/roles")

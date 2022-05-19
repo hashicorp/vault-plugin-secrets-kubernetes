@@ -22,7 +22,7 @@ import (
 )
 
 var standardLabels = map[string]string{
-	"app.kubernetes.io/managed-by": "HashiCorp Vault",
+	"app.kubernetes.io/managed-by": "HashiCorp-Vault",
 	"app.kubernetes.io/created-by": "vault-plugin-secrets-kubernetes",
 }
 

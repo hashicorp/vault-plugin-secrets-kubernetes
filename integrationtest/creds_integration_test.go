@@ -35,7 +35,7 @@ func TestCreds_ttl(t *testing.T) {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",
-				"token_ttl":                     "4h",
+				"token_default_ttl":             "4h",
 				"token_max_ttl":                 "24h",
 			},
 			credsConfig: map[string]interface{}{
@@ -44,11 +44,11 @@ func TestCreds_ttl(t *testing.T) {
 			},
 			expectedTTLSec: 7200,
 		},
-		"default to token_ttl": {
+		"default to token_default_ttl": {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",
-				"token_ttl":                     "4h",
+				"token_default_ttl":             "4h",
 				"token_max_ttl":                 "24h",
 			},
 			credsConfig: map[string]interface{}{
@@ -77,11 +77,11 @@ func TestCreds_ttl(t *testing.T) {
 			},
 			expectedTTLSec: 2764800,
 		},
-		"token_ttl higher than the system max ttl": {
+		"token_default_ttl higher than the system max ttl": {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",
-				"token_ttl":                     "2764801",
+				"token_default_ttl":             "2764801",
 			},
 			credsConfig: map[string]interface{}{
 				"kubernetes_namespace": "test",
@@ -105,7 +105,6 @@ func TestCreds_ttl(t *testing.T) {
 	for n, tc := range tests {
 		t.Run(n, func(t *testing.T) {
 			roleName := fmt.Sprintf("testrole-%d", i)
-			t.Logf("i is %d", i)
 			_, err = client.Logical().Write(path+"/roles/"+roleName, tc.roleConfig)
 			assert.NoError(t, err)
 
@@ -138,7 +137,7 @@ func TestCreds_service_account_name(t *testing.T) {
 	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
 		"allowed_kubernetes_namespaces": []string{"*"},
 		"service_account_name":          "sample-app",
-		"token_ttl":                     "1h",
+		"token_default_ttl":             "1h",
 		"token_max_ttl":                 "24h",
 	})
 	assert.NoError(t, err)
@@ -155,7 +154,7 @@ func TestCreds_service_account_name(t *testing.T) {
 		"name_template":                 "",
 		"service_account_name":          "sample-app",
 		"token_max_ttl":                 oneDay,
-		"token_ttl":                     oneHour,
+		"token_default_ttl":             oneHour,
 	}, roleResponse.Data)
 
 	result1, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
@@ -215,7 +214,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-role-list-pods",
 			"kubernetes_role_type":          "role",
-			"token_ttl":                     "1h",
+			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
@@ -228,7 +227,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
-			"token_ttl":                     oneHour,
+			"token_default_ttl":             oneHour,
 		}
 		testRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -247,7 +246,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
 			"kubernetes_role_type":          "Clusterrole",
-			"token_ttl":                     "1h",
+			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
@@ -260,7 +259,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
-			"token_ttl":                     oneHour,
+			"token_default_ttl":             oneHour,
 		}
 		testClusterRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -313,7 +312,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_type":          "RolE",
-			"token_ttl":                     "1h",
+			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
@@ -326,7 +325,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
-			"token_ttl":                     oneHour,
+			"token_default_ttl":             oneHour,
 		}
 		testRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -347,7 +346,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"allowed_kubernetes_namespaces": []string{"test"},
 			"generated_role_rules":          roleRulesJSON,
 			"kubernetes_role_type":          "clusterRole",
-			"token_ttl":                     "1h",
+			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
@@ -360,7 +359,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"name_template":                 "",
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
-			"token_ttl":                     oneHour,
+			"token_default_ttl":             oneHour,
 		}
 		testClusterRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
