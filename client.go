@@ -37,8 +37,7 @@ func newClient(config *kubeConfig) (*client, error) {
 		BearerToken: config.ServiceAccountJwt,
 	}
 	if config.CACert != "" {
-		// append to clientConfig.TLSClientConfig.CAData
-		clientConfig.TLSClientConfig.CAData = append(clientConfig.TLSClientConfig.CAData, []byte(config.CACert)...)
+		clientConfig.TLSClientConfig.CAData = []byte(config.CACert)
 	}
 	k8sClient, err := kubernetes.NewForConfig(&clientConfig)
 	if err != nil {
@@ -102,7 +101,7 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 		Annotations: vaultRole.Metadata.Annotations,
 	}
 
-	switch makeRoleType(vaultRole.K8sRoleType) {
+	switch vaultRole.K8sRoleType {
 	case "Role":
 		objectMeta.Namespace = namespace
 		roleConfig := &rbacv1.Role{
@@ -135,7 +134,7 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 
 func (c *client) deleteRole(ctx context.Context, namespace, name, roleType string) error {
 	var err error
-	switch makeRoleType(roleType) {
+	switch roleType {
 	case "Role":
 		err = c.k8s.RbacV1().Roles(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	case "ClusterRole":
@@ -171,9 +170,8 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 			Namespace: namespace,
 		},
 	}
-	kind := makeRoleType(vaultRole.K8sRoleType)
 	roleRef := rbacv1.RoleRef{
-		Kind: kind,
+		Kind: vaultRole.K8sRoleType,
 		Name: k8sRoleName,
 	}
 

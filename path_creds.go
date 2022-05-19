@@ -112,7 +112,7 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 	if !strutil.StrListContains(roleEntry.K8sNamespaces, "*") && !strutil.StrListContains(roleEntry.K8sNamespaces, request.Namespace) {
 		return logical.ErrorResponse(fmt.Sprintf("kubernetes_namespace '%s' is not present in role's allowed_kubernetes_namespaces", request.Namespace)), nil
 	}
-	if request.ClusterRoleBinding && makeRoleType(roleEntry.K8sRoleType) == "Role" {
+	if request.ClusterRoleBinding && roleEntry.K8sRoleType == "Role" {
 		return logical.ErrorResponse("a ClusterRoleBinding cannot ref a Role"), nil
 	}
 

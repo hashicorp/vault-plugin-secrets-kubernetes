@@ -100,6 +100,8 @@ func newBackend() (*backend, error) {
 	return b, nil
 }
 
+// This resets anything that needs to be rebuilt after a change. In our case,
+// the k8s client if the config is changed.
 func (b *backend) invalidate(ctx context.Context, key string) {
 	if key == "config" {
 		b.reset()

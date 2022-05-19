@@ -108,6 +108,7 @@ func (b *backend) rollbackRoleBindingWAL(ctx context.Context, req *logical.Reque
 		b.Logger().Warn("rollback error deleting role binding", "isClusterRoleBinding", entry.IsCluster, "namespace", entry.Namespace, "name", entry.Name, "err", err)
 
 		if time.Now().After(entry.Expiration) {
+			b.Logger().Warn("giving up deleting role binding", "isClusterRoleBinding", entry.IsCluster, "namespace", entry.Namespace, "name", entry.Name)
 			return nil
 		}
 		return err

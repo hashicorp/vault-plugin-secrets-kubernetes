@@ -225,9 +225,11 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	if !onlyOneSet(entry.ServiceAccountName, entry.K8sRoleName, entry.RoleRules) {
 		return logical.ErrorResponse("one (and only one) of service_account_name, kubernetes_role_name or generated_role_rules must be set"), nil
 	}
-	if makeRoleType(entry.K8sRoleType) != "Role" && makeRoleType(entry.K8sRoleType) != "ClusterRole" {
+	casedRoleType := makeRoleType(entry.K8sRoleType)
+	if casedRoleType != "Role" && casedRoleType != "ClusterRole" {
 		return logical.ErrorResponse("kubernetes_role_type must be either 'Role' or 'ClusterRole'"), nil
 	}
+	entry.K8sRoleType = casedRoleType
 	// Try parsing the role rules as json or yaml
 	if entry.RoleRules != "" {
 		if _, err := makeRules(entry.RoleRules); err != nil {
