@@ -52,7 +52,7 @@ func (b *backend) pathCredentials() *framework.Path {
 		Fields: map[string]*framework.FieldSchema{
 			"name": {
 				Type:        framework.TypeLowerCaseString,
-				Description: "Name of the role",
+				Description: "Name of the Vault role",
 				Required:    true,
 			},
 			"kubernetes_namespace": {
@@ -66,7 +66,7 @@ func (b *backend) pathCredentials() *framework.Path {
 			},
 			"ttl": {
 				Type:        framework.TypeDurationSecond,
-				Description: "The ttl of the generated Kubernetes service account",
+				Description: "The TTL of the generated credentials",
 			},
 		},
 
@@ -306,10 +306,8 @@ func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, er
 		return nil, err
 	}
 
-	if b.client == nil {
-		if config == nil {
-			config = new(kubeConfig)
-		}
+	if b.client == nil && config == nil {
+		config = new(kubeConfig)
 	}
 
 	b.client, err = newClient(config)
