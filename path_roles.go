@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-secure-stdlib/strutil"
 	"github.com/hashicorp/vault/sdk/framework"
+	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
 )
@@ -225,11 +226,16 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	if !onlyOneSet(entry.ServiceAccountName, entry.K8sRoleName, entry.RoleRules) {
 		return logical.ErrorResponse("one (and only one) of service_account_name, kubernetes_role_name or generated_role_rules must be set"), nil
 	}
+	if entry.TokenMaxTTL > 0 && entry.TokenDefaultTTL > entry.TokenMaxTTL {
+		return logical.ErrorResponse("token_default_ttl %s cannot be greater than token_max_ttl %s", entry.TokenDefaultTTL, entry.TokenMaxTTL), nil
+	}
+
 	casedRoleType := makeRoleType(entry.K8sRoleType)
 	if casedRoleType != "Role" && casedRoleType != "ClusterRole" {
 		return logical.ErrorResponse("kubernetes_role_type must be either 'Role' or 'ClusterRole'"), nil
 	}
 	entry.K8sRoleType = casedRoleType
+
 	// Try parsing the role rules as json or yaml
 	if entry.RoleRules != "" {
 		if _, err := makeRules(entry.RoleRules); err != nil {
@@ -237,8 +243,14 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		}
 	}
 
-	if entry.TokenMaxTTL > 0 && entry.TokenDefaultTTL > entry.TokenMaxTTL {
-		return logical.ErrorResponse("token_default_ttl %s cannot be greater than token_max_ttl %s", entry.TokenDefaultTTL, entry.TokenMaxTTL), nil
+	// verify the template is valid
+	nameTemplate := entry.NameTemplate
+	if nameTemplate == "" {
+		nameTemplate = defaultNameTemplate
+	}
+	_, err = template.NewTemplate(template.Template(nameTemplate))
+	if err != nil {
+		return logical.ErrorResponse("unable to initialize name template: %s", err), nil
 	}
 
 	if err := setRole(ctx, req.Storage, name, entry); err != nil {

@@ -35,6 +35,10 @@ type walRole struct {
 	Expiration time.Time
 }
 
+// rollbackRoleWAL uses the info in a walRole entry to delete a Role/ClusterRole
+// from Kubernetes. We're relying on Kubernetes garbage collection to delete the
+// other related objects (RoleBinding/ClusterRoleBinding and ServiceAccount)
+// since they should have an owner reference to the Role/ClusterRole
 func (b *backend) rollbackRoleWAL(ctx context.Context, req *logical.Request, data interface{}) error {
 	// Decode the WAL data
 	var entry walRole
@@ -61,9 +65,10 @@ func (b *backend) rollbackRoleWAL(ctx context.Context, req *logical.Request, dat
 	// client creds have changed and the delete will never succeed),
 	// unconditionally remove the WAL.
 	if err := client.deleteRole(ctx, entry.Namespace, entry.Name, entry.RoleType); err != nil {
-		b.Logger().Warn("rollback error deleting", "roleType", entry.RoleType, "err", err)
+		b.Logger().Warn("rollback error deleting", "roleType", entry.RoleType, "namespace", entry.Namespace, "name", entry.Name, "err", err)
 
 		if time.Now().After(entry.Expiration) {
+			b.Logger().Warn("giving up deleting", "roleType", entry.RoleType, "namespace", entry.Namespace, "name", entry.Name)
 			return nil
 		}
 		return err
@@ -79,6 +84,10 @@ type walRoleBinding struct {
 	Expiration time.Time
 }
 
+// rollbackRoleBindingWAL uses the info in a walRole entry to delete a
+// Role/ClusterRole from Kubernetes. We're relying on Kubernetes garbage
+// collection to delete the related ServiceAccount since it should have an owner
+// reference to the RoleBinding/ClusterRoleBinding
 func (b *backend) rollbackRoleBindingWAL(ctx context.Context, req *logical.Request, data interface{}) error {
 	// Decode the WAL data
 	var entry walRoleBinding

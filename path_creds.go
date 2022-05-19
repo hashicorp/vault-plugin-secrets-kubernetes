@@ -332,12 +332,7 @@ func createServiceAccount(ctx context.Context, client *client, namespace, name s
 
 // create role binding and put a WAL entry
 func createRoleBindingWithWAL(ctx context.Context, client *client, s logical.Storage, namespace, name, k8sRoleName string, isClusterRoleBinding bool, vaultRole *roleEntry) (string, metav1.OwnerReference, error) {
-	ownerRef, err := client.createRoleBinding(ctx, namespace, name, k8sRoleName, isClusterRoleBinding, vaultRole, nil)
-	if err != nil {
-		return "", ownerRef, fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", name, k8sRoleName, err)
-	}
-	// Write a WAL entry in case the role binding create doesn't complete; this
-	// is also the parent object ownerReference for other created objects
+	// Write a WAL entry in case the role binding create doesn't complete
 	walId, err := framework.PutWAL(ctx, s, walBindingKind, &walRoleBinding{
 		Namespace:  namespace,
 		Name:       name,
@@ -345,7 +340,12 @@ func createRoleBindingWithWAL(ctx context.Context, client *client, s logical.Sto
 		Expiration: time.Now().Add(maxWALAge),
 	})
 	if err != nil {
-		return "", ownerRef, fmt.Errorf("error writing role binding WAL: %w", err)
+		return "", metav1.OwnerReference{}, fmt.Errorf("error writing role binding WAL: %w", err)
+	}
+
+	ownerRef, err := client.createRoleBinding(ctx, namespace, name, k8sRoleName, isClusterRoleBinding, vaultRole, nil)
+	if err != nil {
+		return "", ownerRef, fmt.Errorf("failed to create RoleBinding/ClusterRoleBinding '%s' for %s: %s", name, k8sRoleName, err)
 	}
 
 	return walId, ownerRef, nil
@@ -361,10 +361,6 @@ func createRoleBinding(ctx context.Context, client *client, namespace, name, k8s
 
 // create a role and put a WAL entry
 func createRoleWithWAL(ctx context.Context, client *client, s logical.Storage, namespace, name string, vaultRole *roleEntry) (string, metav1.OwnerReference, error) {
-	ownerRef, err := client.createRole(ctx, namespace, name, vaultRole)
-	if err != nil {
-		return "", ownerRef, fmt.Errorf("failed to create Role/ClusterRole '%s/%s: %s", namespace, name, err)
-	}
 	// Write a WAL entry in case subsequent parts don't complete
 	walId, err := framework.PutWAL(ctx, s, walRoleKind, &walRole{
 		Namespace:  namespace,
@@ -373,7 +369,12 @@ func createRoleWithWAL(ctx context.Context, client *client, s logical.Storage, n
 		Expiration: time.Now().Add(maxWALAge),
 	})
 	if err != nil {
-		return "", ownerRef, fmt.Errorf("error writing service account WAL: %w", err)
+		return "", metav1.OwnerReference{}, fmt.Errorf("error writing service account WAL: %w", err)
+	}
+
+	ownerRef, err := client.createRole(ctx, namespace, name, vaultRole)
+	if err != nil {
+		return "", ownerRef, fmt.Errorf("failed to create Role/ClusterRole '%s/%s: %s", namespace, name, err)
 	}
 
 	return walId, ownerRef, nil

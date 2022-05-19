@@ -74,6 +74,14 @@ func TestRoles(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "token_default_ttl 11h0m0s cannot be greater than token_max_ttl 5h0m0s")
+
+		resp, err = testRoleCreate(t, b, s, "badtemplate", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"name_template":                 "{{.String",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "unable to initialize name template: unable to parse template: template: template:1: unclosed action")
 	})
 
 	t.Run("delete role - non-existant and blank", func(t *testing.T) {

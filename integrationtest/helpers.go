@@ -46,11 +46,11 @@ func newK8sClient(t *testing.T, token string) kubernetes.Interface {
 }
 
 // Verify a creds response with a generated service account
-func verifyCredsResponseGenerated(t *testing.T, result *api.Secret, namespace string, leaseDuration int) {
+func verifyCredsResponseGenerated(t *testing.T, result *api.Secret, namespace string, leaseDuration int, name string) {
 	t.Helper()
 	assert.Equal(t, leaseDuration, result.LeaseDuration)
 	assert.Equal(t, false, result.Renewable)
-	assert.Contains(t, result.Data["service_account_name"], "v-token-")
+	assert.Contains(t, result.Data["service_account_name"], name)
 	assert.Equal(t, namespace, result.Data["service_account_namespace"])
 }
 
@@ -255,7 +255,12 @@ func testRoleType(t *testing.T, client *api.Client, mountPath string, roleConfig
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result1)
-	verifyCredsResponseGenerated(t, result1, "test", 7200)
+
+	expectedName := "v-token-"
+	if nt, ok := roleConfig["name_template"]; ok && nt != "" {
+		expectedName = "v-custom-name-"
+	}
+	verifyCredsResponseGenerated(t, result1, "test", 7200, expectedName)
 
 	// Check the k8s objects that should've been created
 	if grr, ok := roleConfig["generated_role_rules"]; ok && grr.(string) != "" {
@@ -318,7 +323,7 @@ func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, rol
 		"ttl":                  "2h",
 	})
 	assert.NoError(t, err)
-	verifyCredsResponseGenerated(t, result1, "test", 7200)
+	verifyCredsResponseGenerated(t, result1, "test", 7200, "v-token-")
 
 	if grr, ok := roleConfig["generated_role_rules"]; ok && grr.(string) != "" {
 		verifyRole(t, expectedRoleResponse, result1)
@@ -337,7 +342,7 @@ func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, rol
 		"ttl":                  "2h",
 	})
 	assert.NoError(t, err)
-	verifyCredsResponseGenerated(t, result2, "test", 7200)
+	verifyCredsResponseGenerated(t, result2, "test", 7200, "v-token-")
 
 	if grr, ok := roleConfig["generated_role_rules"]; ok && grr.(string) != "" {
 		verifyRole(t, expectedRoleResponse, result2)

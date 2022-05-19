@@ -216,6 +216,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"kubernetes_role_type":          "role",
 			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
+			"name_template":                 `{{ printf "v-custom-name-%s" (random 24) | truncate 62 | lowercase }}`,
 		}
 		expectedRoleResponse := map[string]interface{}{
 			"additional_metadata":           metadata,
@@ -224,7 +225,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"kubernetes_role_name":          "test-role-list-pods",
 			"kubernetes_role_type":          "Role",
 			"name":                          "testrole",
-			"name_template":                 "",
+			"name_template":                 `{{ printf "v-custom-name-%s" (random 24) | truncate 62 | lowercase }}`,
 			"service_account_name":          "",
 			"token_max_ttl":                 oneDay,
 			"token_default_ttl":             oneHour,
@@ -238,7 +239,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 				"environment": "staging",
 			},
 			"annotations": map[string]interface{}{
-				"tested": "tomrrow",
+				"tested": "tomorrow",
 			},
 		}
 		roleConfig := map[string]interface{}{
