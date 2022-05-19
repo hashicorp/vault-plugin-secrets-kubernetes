@@ -1,6 +1,7 @@
 package integrationtest
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/vault/api"
@@ -23,55 +24,101 @@ func TestCreds_ttl(t *testing.T) {
 	_, err = client.Logical().Write(path+"/config", map[string]interface{}{})
 	require.NoError(t, err)
 
-	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
-		"allowed_kubernetes_namespaces": []string{"*"},
-		"service_account_name":          "sample-app",
-		"token_ttl":                     "1h",
-		"token_max_ttl":                 "24h",
-	})
-	assert.NoError(t, err)
+	type testCase struct {
+		roleConfig     map[string]interface{}
+		credsConfig    map[string]interface{}
+		expectedTTLSec int
+	}
 
-	result, err := client.Logical().Read(path + "/roles/testrole")
-	assert.NoError(t, err)
-	assert.Equal(t, oneDay, result.Data["token_max_ttl"])
-	assert.Equal(t, oneHour, result.Data["token_ttl"])
+	tests := map[string]testCase{
+		"both set": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_ttl":                     "4h",
+				"token_max_ttl":                 "24h",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+				"ttl":                  "2h",
+			},
+			expectedTTLSec: 7200,
+		},
+		"default to token_ttl": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_ttl":                     "4h",
+				"token_max_ttl":                 "24h",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedTTLSec: 14400,
+		},
+		"capped to token_max_ttl from system default": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_max_ttl":                 "24h",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedTTLSec: 86400,
+		},
+		"default to system ttl": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedTTLSec: 2764800,
+		},
+		"token_ttl higher than the system max ttl": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_ttl":                     "2764801",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedTTLSec: 2764800,
+		},
+		"token_max_ttl higher than the system max ttl": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_max_ttl":                 "3700000",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+				"ttl":                  "2764801",
+			},
+			expectedTTLSec: 2764800,
+		},
+	}
+	i := 0
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			roleName := fmt.Sprintf("testrole-%d", i)
+			t.Logf("i is %d", i)
+			_, err = client.Logical().Write(path+"/roles/"+roleName, tc.roleConfig)
+			assert.NoError(t, err)
 
-	result1, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
-		"kubernetes_namespace": "test",
-		"ttl":                  "2h",
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 7200, result1.LeaseDuration)
+			creds, err := client.Logical().Write(path+"/creds/"+roleName, tc.credsConfig)
+			assert.NoError(t, err)
+			require.NotNil(t, creds)
+			assert.Equal(t, tc.expectedTTLSec, creds.LeaseDuration)
 
-	// Test different TTL settings
-	result2, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
-		"kubernetes_namespace": "test",
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 3600, result2.LeaseDuration)
-
-	// default to token_max_ttl
-	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
-		"token_ttl": "0",
-	})
-	assert.NoError(t, err)
-
-	result3, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
-		"kubernetes_namespace": "test",
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 86400, result3.LeaseDuration)
-
-	// default to mount's ttl
-	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
-		"token_max_ttl": "0",
-	})
-	assert.NoError(t, err)
-	result4, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
-		"kubernetes_namespace": "test",
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, 2764800, result4.LeaseDuration)
+			// check k8s token expiry
+			testK8sTokenTTL(t, tc.expectedTTLSec, creds.Data["service_account_token"].(string))
+		})
+		i = i + 1
+	}
 }
 
 func TestCreds_service_account_name(t *testing.T) {

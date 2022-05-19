@@ -42,6 +42,11 @@ type nameMetadata struct {
 }
 
 func (b *backend) pathCredentials() *framework.Path {
+	forwardOperation := &framework.PathOperation{
+		Callback:                    b.pathCredentialsRead,
+		ForwardPerformanceSecondary: true,
+		ForwardPerformanceStandby:   true,
+	}
 	return &framework.Path{
 		Pattern: pathCreds + framework.GenericNameRegex("name"),
 		Fields: map[string]*framework.FieldSchema{
@@ -64,13 +69,14 @@ func (b *backend) pathCredentials() *framework.Path {
 				Description: "The ttl of the generated Kubernetes service account",
 			},
 		},
-		Callbacks: map[logical.Operation]framework.OperationFunc{
-			logical.ReadOperation:   b.pathCredentialsRead,
-			logical.UpdateOperation: b.pathCredentialsRead,
-		},
 
 		HelpSynopsis:    pathCredsHelpSyn,
 		HelpDescription: pathCredsHelpDesc,
+
+		Operations: map[logical.Operation]framework.OperationHandler{
+			logical.ReadOperation:   forwardOperation,
+			logical.UpdateOperation: forwardOperation,
+		},
 	}
 }
 
@@ -137,7 +143,8 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	}
 
 	// Determine the TTL here, since it might come from the mount if nothing on
-	// the vault role or creds payload is specified
+	// the vault role or creds payload is specified, and we need to know it
+	// before creating K8s Token
 	theTTL := time.Duration(0)
 	switch {
 	case reqPayload.TTL > 0:
@@ -146,6 +153,21 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		theTTL = role.TokenTTL
 	default:
 		theTTL = b.System().DefaultLeaseTTL()
+	}
+
+	var respWarning []string
+	// If the calculated TTL is greater than the role's max ttl, it'll be capped
+	// by the framework when returned. Catch it here so that the k8s token has
+	// the same capped TTL.
+	if role.TokenMaxTTL > 0 && theTTL > role.TokenMaxTTL {
+		respWarning = append(respWarning, fmt.Sprintf("ttl of %s is greater than the role's token_max_ttl of %s; capping accordingly", theTTL.String(), role.TokenMaxTTL.String()))
+		theTTL = role.TokenMaxTTL
+	}
+	// Similarly, if the calculated TTL is greater than the system's max lease
+	// ttl, cap accordingly here.
+	if theTTL > b.System().MaxLeaseTTL() {
+		respWarning = append(respWarning, fmt.Sprintf("ttl of %s is greater than Vault's max lease ttl %s; capping accordingly", theTTL.String(), b.System().MaxLeaseTTL().String()))
+		theTTL = b.System().MaxLeaseTTL()
 	}
 
 	// These are created items to save internally and/or return to the caller
@@ -258,6 +280,9 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	resp.Secret.TTL = theTTL
 	if role.TokenMaxTTL > 0 {
 		resp.Secret.MaxTTL = role.TokenMaxTTL
+	}
+	if len(respWarning) > 0 {
+		resp.Warnings = respWarning
 	}
 
 	return resp, nil

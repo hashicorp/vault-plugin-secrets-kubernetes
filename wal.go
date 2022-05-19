@@ -22,7 +22,7 @@ func (b *backend) walRollback(ctx context.Context, req *logical.Request, kind st
 	case walRoleKind:
 		return b.rollbackRoleWAL(ctx, req, data)
 	case walBindingKind:
-		return b.rollbackBindingWAL(ctx, req, data)
+		return b.rollbackRoleBindingWAL(ctx, req, data)
 	default:
 		return fmt.Errorf("unknown rollback type %q", kind)
 	}
@@ -79,7 +79,7 @@ type walRoleBinding struct {
 	Expiration time.Time
 }
 
-func (b *backend) rollbackBindingWAL(ctx context.Context, req *logical.Request, data interface{}) error {
+func (b *backend) rollbackRoleBindingWAL(ctx context.Context, req *logical.Request, data interface{}) error {
 	// Decode the WAL data
 	var entry walRoleBinding
 	d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -101,7 +101,7 @@ func (b *backend) rollbackBindingWAL(ctx context.Context, req *logical.Request, 
 
 	b.Logger().Debug("rolling back role binding", "isClusterRoleBinding", entry.IsCluster, "namespace", entry.Namespace, "name", entry.Name)
 
-	// Attempt to delete the RolbBinding. If we don't succeed within maxWALAge
+	// Attempt to delete the RoleBinding. If we don't succeed within maxWALAge
 	// (e.g. client creds have changed and the delete will never succeed),
 	// unconditionally remove the WAL.
 	if err := client.deleteRoleBinding(ctx, entry.Namespace, entry.Name, entry.IsCluster); err != nil {

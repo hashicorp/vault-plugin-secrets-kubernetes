@@ -13,6 +13,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	josejwt "gopkg.in/square/go-jose.v2/jwt"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_yaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -21,7 +22,7 @@ import (
 )
 
 var standardLabels = map[string]string{
-	"app.kubernetes.io/managed-by": "vault",
+	"app.kubernetes.io/managed-by": "HashiCorp Vault",
 	"app.kubernetes.io/created-by": "vault-plugin-secrets-kubernetes",
 }
 
@@ -371,6 +372,17 @@ func testClusterRoleType(t *testing.T, client *api.Client, mountPath string, rol
 	assert.Nil(t, result)
 }
 
+func testK8sTokenTTL(t *testing.T, expectedSec int, token string) {
+	parsed, err := josejwt.ParseSigned(token)
+	require.NoError(t, err)
+	claims := map[string]interface{}{}
+	err = parsed.UnsafeClaimsWithoutVerification(&claims)
+	require.NoError(t, err)
+	iat := claims["iat"].(float64)
+	exp := claims["exp"].(float64)
+	assert.Equal(t, expectedSec, int(exp-iat))
+}
+
 func combineMaps(maps ...map[string]string) map[string]string {
 	newMap := make(map[string]string)
 	for _, m := range maps {
@@ -402,7 +414,7 @@ func makeExpectedLabels(t *testing.T, userMetadata map[string]interface{}) map[s
 
 	expectedLabels := map[string]string{}
 	if userLabels != nil {
-		expectedLabels = combineMaps(standardLabels, userLabels)
+		expectedLabels = combineMaps(userLabels, standardLabels)
 	} else {
 		expectedLabels = standardLabels
 	}

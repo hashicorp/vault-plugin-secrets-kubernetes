@@ -19,7 +19,7 @@ import (
 )
 
 var standardLabels = map[string]string{
-	"app.kubernetes.io/managed-by": "vault",
+	"app.kubernetes.io/managed-by": "HashiCorp Vault",
 	"app.kubernetes.io/created-by": "vault-plugin-secrets-kubernetes",
 }
 
@@ -63,7 +63,8 @@ func (c *client) createToken(ctx context.Context, namespace, name string, ttl ti
 }
 
 func (c *client) createServiceAccount(ctx context.Context, namespace, name string, vaultRole *roleEntry, ownerRef metav1.OwnerReference) (*v1.ServiceAccount, error) {
-	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
+	// Set standardLabels last so that users can't override them
+	labels := combineMaps(vaultRole.Metadata.Labels, standardLabels)
 	serviceAccountConfig := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            name,
@@ -93,7 +94,8 @@ func (c *client) createRole(ctx context.Context, namespace, name string, vaultRo
 	if err != nil {
 		return thisOwnerRef, err
 	}
-	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
+	// Set standardLabels last so that users can't override them
+	labels := combineMaps(vaultRole.Metadata.Labels, standardLabels)
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
 		Labels:      labels,
@@ -152,7 +154,8 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 		APIVersion: "rbac.authorization.k8s.io/v1",
 		Name:       name,
 	}
-	labels := combineMaps(standardLabels, vaultRole.Metadata.Labels)
+	// Set standardLabels last so that users can't override them
+	labels := combineMaps(vaultRole.Metadata.Labels, standardLabels)
 	objectMeta := metav1.ObjectMeta{
 		Name:        name,
 		Labels:      labels,

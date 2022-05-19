@@ -235,13 +235,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		}
 	}
 
-	if entry.TokenTTL > entry.TokenMaxTTL {
-		if entry.TokenMaxTTL > 0 {
-			return logical.ErrorResponse("token_ttl %s cannot be greater than token_max_ttl %s", entry.TokenTTL, entry.TokenMaxTTL), nil
-		}
-		if entry.TokenTTL > b.System().MaxLeaseTTL() {
-			return logical.ErrorResponse("token_ttl %s cannot be greater than the secret engine mount's max ttl %s", entry.TokenTTL, b.System().MaxLeaseTTL()), nil
-		}
+	if entry.TokenMaxTTL > 0 && entry.TokenTTL > entry.TokenMaxTTL {
+		return logical.ErrorResponse("token_ttl %s cannot be greater than token_max_ttl %s", entry.TokenTTL, entry.TokenMaxTTL), nil
 	}
 
 	if err := setRole(ctx, req.Storage, name, entry); err != nil {
