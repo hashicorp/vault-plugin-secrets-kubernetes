@@ -75,7 +75,6 @@ func (b *backend) pathCredentials() *framework.Path {
 		HelpDescription: pathCredsHelpDesc,
 
 		Operations: map[logical.Operation]framework.OperationHandler{
-			logical.ReadOperation:   forwardOperation,
 			logical.UpdateOperation: forwardOperation,
 		},
 	}
