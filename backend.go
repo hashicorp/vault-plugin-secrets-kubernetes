@@ -115,5 +115,5 @@ func (b *backend) reset() {
 }
 
 const backendHelp = `
-The Kubernetes Secret Backend generates Kubernetes service account tokens with associated roles and role bindings.
+The Kubernetes Secret Engine generates Kubernetes service account tokens with associated roles and role bindings.
 `
