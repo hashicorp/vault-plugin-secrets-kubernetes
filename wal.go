@@ -62,7 +62,7 @@ func (b *backend) rollbackRoleWAL(ctx context.Context, req *logical.Request, dat
 	b.Logger().Debug("rolling back", "role", entry.RoleType, "namespace", entry.Namespace, "name", entry.Name)
 
 	// Attempt to delete the Role. If we don't succeed within maxWALAge (e.g.
-	// client creds have changed and the delete will never succeed),
+	// client creds are somehow incorrect and the delete will never succeed),
 	// unconditionally remove the WAL.
 	if err := client.deleteRole(ctx, entry.Namespace, entry.Name, entry.RoleType); err != nil {
 		b.Logger().Warn("rollback error deleting", "roleType", entry.RoleType, "namespace", entry.Namespace, "name", entry.Name, "err", err)
@@ -111,8 +111,8 @@ func (b *backend) rollbackRoleBindingWAL(ctx context.Context, req *logical.Reque
 	b.Logger().Debug("rolling back role binding", "isClusterRoleBinding", entry.IsCluster, "namespace", entry.Namespace, "name", entry.Name)
 
 	// Attempt to delete the RoleBinding. If we don't succeed within maxWALAge
-	// (e.g. client creds have changed and the delete will never succeed),
-	// unconditionally remove the WAL.
+	// (e.g. client creds are somehow incorrect and the delete will never
+	// succeed), unconditionally remove the WAL.
 	if err := client.deleteRoleBinding(ctx, entry.Namespace, entry.Name, entry.IsCluster); err != nil {
 		b.Logger().Warn("rollback error deleting role binding", "isClusterRoleBinding", entry.IsCluster, "namespace", entry.Namespace, "name", entry.Name, "err", err)
 
