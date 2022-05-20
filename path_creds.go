@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
@@ -179,9 +178,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	createdK8sRoleBinding := ""
 	createdK8sRole := ""
 
-	// WAL id's
-	roleWALId := ""
-	bindingWALId := ""
+	var walID string
 
 	switch {
 	case role.ServiceAccountName != "":
@@ -198,7 +195,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		// then token
 		// RoleBinding/ClusterRoleBinding will be the owning object
 		ownerRef := metav1.OwnerReference{}
-		bindingWALId, ownerRef, err = createRoleBindingWithWAL(ctx, client, req.Storage, reqPayload.Namespace, genName, role.K8sRoleName, reqPayload.ClusterRoleBinding, role)
+		walID, ownerRef, err = createRoleBindingWithWAL(ctx, client, req.Storage, reqPayload.Namespace, genName, role.K8sRoleName, reqPayload.ClusterRoleBinding, role)
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +217,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		// Create role, rolebinding, service account, token
 		// Role/ClusterRole will be the owning object
 		ownerRef := metav1.OwnerReference{}
-		roleWALId, ownerRef, err = createRoleWithWAL(ctx, client, req.Storage, reqPayload.Namespace, genName, role)
+		walID, ownerRef, err = createRoleWithWAL(ctx, client, req.Storage, reqPayload.Namespace, genName, role)
 		if err != nil {
 			return nil, err
 		}
@@ -249,18 +246,12 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		return nil, fmt.Errorf("one of service_account_name, kubernetes_role_name, or generated_role_rules must be set")
 	}
 
-	// Delete any WALs entries that were created, since all the k8s objects were
+	// Delete the WAL entry that was created, since all the k8s objects were
 	// created successfully (no need to rollback anymore)
-	var errors *multierror.Error
-	for _, walId := range []string{roleWALId, bindingWALId} {
-		if walId != "" {
-			if err := framework.DeleteWAL(ctx, req.Storage, walId); err != nil {
-				errors = multierror.Append(errors, fmt.Errorf("error deleting WAL: %w", err))
-			}
+	if walID != "" {
+		if err := framework.DeleteWAL(ctx, req.Storage, walID); err != nil {
+			return nil, fmt.Errorf("error deleting WAL: %w", err)
 		}
-	}
-	if errors.ErrorOrNil() != nil {
-		return nil, errors
 	}
 
 	resp := b.Secret(kubeTokenType).Response(map[string]interface{}{
