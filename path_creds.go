@@ -246,14 +246,6 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		return nil, fmt.Errorf("one of service_account_name, kubernetes_role_name, or generated_role_rules must be set")
 	}
 
-	// Delete the WAL entry that was created, since all the k8s objects were
-	// created successfully (no need to rollback anymore)
-	if walID != "" {
-		if err := framework.DeleteWAL(ctx, req.Storage, walID); err != nil {
-			return nil, fmt.Errorf("error deleting WAL: %w", err)
-		}
-	}
-
 	resp := b.Secret(kubeTokenType).Response(map[string]interface{}{
 		"service_account_namespace": reqPayload.Namespace,
 		"service_account_name":      serviceAccountName,
@@ -288,6 +280,14 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 
 	if len(respWarning) > 0 {
 		resp.Warnings = respWarning
+	}
+
+	// Delete the WAL entry that was created, since all the k8s objects were
+	// created successfully (no need to rollback anymore)
+	if walID != "" {
+		if err := framework.DeleteWAL(ctx, req.Storage, walID); err != nil {
+			return nil, fmt.Errorf("error deleting WAL: %w", err)
+		}
 	}
 
 	return resp, nil
