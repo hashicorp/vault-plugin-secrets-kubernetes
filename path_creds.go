@@ -293,15 +293,13 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 }
 
 func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, error) {
-	// Don't lose the client if b.reset() is called before returning
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	client := b.client
 	if client != nil {
 		return client, nil
 	}
-
-	// Now lock since we need a new client
-	b.lock.Lock()
-	defer b.lock.Unlock()
 
 	config, err := b.configWithDynamicValues(ctx, s)
 	if err != nil {
