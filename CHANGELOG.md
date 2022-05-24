@@ -2,7 +2,7 @@
 
 ### Changes
 
-* Unused keys in `additional_metadata` when writing a role will now cause an error [[GH-5](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/5)]
+* Unused keys in `additional_metadata` when writing a role will now cause an error [[GH-6](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/6)]
 
 ## 0.1.0 (May 20th, 2022)
 
