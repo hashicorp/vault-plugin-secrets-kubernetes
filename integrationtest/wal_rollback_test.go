@@ -44,27 +44,27 @@ func TestCreds_wal_rollback(t *testing.T) {
   resources: ["pods"]
   verbs: ["list"]`
 
-		metadata := map[string]interface{}{
-			"labels": map[string]interface{}{
-				"environment": "testing",
-				"test":        "wal_rollback",
-				"type":        "role",
-			},
-			"annotations": map[string]interface{}{
-				"tested": "today",
-			},
+		extraLabels := map[string]string{
+			"environment": "testing",
+			"test":        "wal_rollback",
+			"type":        "role",
+		}
+		extraAnnotations := map[string]string{
+			"tested": "today",
 		}
 		roleConfig := map[string]interface{}{
-			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
+			"extra_annotations":             extraAnnotations,
+			"extra_labels":                  extraLabels,
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_type":          "RolE",
 			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
+			"extra_annotations":             asMapInterface(extraAnnotations),
+			"extra_labels":                  asMapInterface(extraLabels),
 			"generated_role_rules":          roleRulesYAML,
 			"kubernetes_role_name":          "",
 			"kubernetes_role_type":          "Role",
@@ -112,28 +112,28 @@ func TestCreds_wal_rollback(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		metadata := map[string]interface{}{
-			"labels": map[string]interface{}{
-				"environment": "staging",
-				"test":        "wal_rollback",
-				"type":        "clusterrolebinding",
-			},
-			"annotations": map[string]interface{}{
-				"tested":  "tomorrow",
-				"checked": "again",
-			},
+		extraLabels := map[string]string{
+			"environment": "staging",
+			"test":        "wal_rollback",
+			"type":        "clusterrolebinding",
+		}
+		extraAnnotations := map[string]string{
+			"tested":  "tomorrow",
+			"checked": "again",
 		}
 		roleConfig := map[string]interface{}{
-			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []string{"test"},
+			"extra_annotations":             extraAnnotations,
+			"extra_labels":                  extraLabels,
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
 			"kubernetes_role_type":          "ClusterRole",
 			"token_default_ttl":             "1h",
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"additional_metadata":           metadata,
 			"allowed_kubernetes_namespaces": []interface{}{"test"},
+			"extra_annotations":             asMapInterface(extraAnnotations),
+			"extra_labels":                  asMapInterface(extraLabels),
 			"generated_role_rules":          "",
 			"kubernetes_role_name":          "test-cluster-role-list-pods",
 			"kubernetes_role_type":          "ClusterRole",
@@ -182,7 +182,7 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 	}
 
 	// Query by labels since we may not know the name
-	l := makeExpectedLabels(t, roleConfig["additional_metadata"].(map[string]interface{}))
+	l := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]string))
 	validatedSelector, err := labels.ValidatedSelectorFromSet(l)
 	require.NoError(t, err)
 	listOptions := metav1.ListOptions{
@@ -220,7 +220,7 @@ func verifyObjectsDeleted(t *testing.T, roleConfig map[string]interface{}, isClu
 	roleType := strings.ToLower(roleConfig["kubernetes_role_type"].(string))
 
 	// Query by labels since we may not know the name
-	l := makeExpectedLabels(t, roleConfig["additional_metadata"].(map[string]interface{}))
+	l := makeExpectedLabels(t, asMapString(roleConfig["extra_labels"].(map[string]interface{})))
 	validatedSelector, err := labels.ValidatedSelectorFromSet(l)
 	require.NoError(t, err)
 	listOptions := metav1.ListOptions{
