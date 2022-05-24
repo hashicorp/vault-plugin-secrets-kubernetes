@@ -48,15 +48,26 @@ func TestRoles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "failed to parse 'generated_role_rules' as k8s.io/api/rbac/v1/Policy object")
 
-		resp, err = testRoleCreate(t, b, s, "badmeta", map[string]interface{}{
-			"allowed_kubernetes_namespaces": []string{"*"},
-			"service_account_name":          "test_svc_account",
-			"additional_metadata": map[string]interface{}{
+		for _, badmeta := range []map[string]interface{}{
+			// "labels" value is not a map.
+			{
 				"labels": []string{"one", "two"},
 			},
-		})
-		assert.NoError(t, err)
-		assert.EqualError(t, resp.Error(), "additional_metadata should be a nested map, with only 'labels' and 'annotations' as the top level keys")
+			// "foo" is not a valid top-level key.
+			{
+				"foo": map[string]string{
+					"foo": "bar",
+				},
+			},
+		} {
+			resp, err = testRoleCreate(t, b, s, "badmeta", map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "test_svc_account",
+				"additional_metadata":           badmeta,
+			})
+			assert.NoError(t, err)
+			assert.EqualError(t, resp.Error(), "additional_metadata should be a nested map, with only 'labels' and 'annotations' as the top level keys")
+		}
 
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},

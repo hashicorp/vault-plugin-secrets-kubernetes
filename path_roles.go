@@ -214,7 +214,14 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		entry.NameTemplate = nameTemplate.(string)
 	}
 	if metadata, ok := d.GetOk("additional_metadata"); ok {
-		if err := mapstructure.Decode(metadata, &entry.Metadata); err != nil {
+		dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			ErrorUnused: true,
+			Result:      &entry.Metadata,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create decoder for additional metadata: %w", err)
+		}
+		if err := dec.Decode(metadata); err != nil {
 			return logical.ErrorResponse("additional_metadata should be a nested map, with only 'labels' and 'annotations' as the top level keys"), nil
 		}
 	}
