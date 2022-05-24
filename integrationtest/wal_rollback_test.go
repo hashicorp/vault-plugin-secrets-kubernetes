@@ -28,7 +28,7 @@ func TestCreds_wal_rollback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("generated_role_rules (takes 10 minutes)", func(t *testing.T) {
+	t.Run("generated_role_rules", func(t *testing.T) {
 		t.Parallel()
 		mountPath, umount := mountHelper(t, client)
 		defer umount()
@@ -94,14 +94,16 @@ func TestCreds_wal_rollback(t *testing.T) {
 		assert.Nil(t, credsResponse)
 		assert.Contains(t, err.Error(), `User "system:serviceaccount:test:broken-jwt" cannot create resource "serviceaccounts" in API group "" in the namespace "test"`)
 
-		checkObjects(t, roleConfig, false, true, 30*time.Second)
+		t.Log("Checking for hanging k8s objects")
+		checkObjects(t, roleConfig, false, true, 10*time.Second)
 
 		// The backend's WAL min age is 10 minutes. After that the k8s objects
 		// should be cleaned up.
-		checkObjects(t, roleConfig, false, false, 15*time.Minute)
+		t.Log("Checking hanging objects have been cleaned up")
+		checkObjects(t, roleConfig, false, false, 1*time.Minute)
 	})
 
-	t.Run("kubernetes_role_name (takes 10 minutes)", func(t *testing.T) {
+	t.Run("kubernetes_role_name", func(t *testing.T) {
 		t.Parallel()
 		mountPath, umount := mountHelper(t, client)
 		defer umount()
@@ -163,11 +165,13 @@ func TestCreds_wal_rollback(t *testing.T) {
 		assert.Nil(t, credsResponse)
 		assert.Contains(t, err.Error(), `User "system:serviceaccount:test:broken-jwt" cannot create resource "serviceaccounts" in API group "" in the namespace "test"`)
 
-		checkObjects(t, roleConfig, true, true, 30*time.Second)
+		t.Log("Checking for hanging k8s objects")
+		checkObjects(t, roleConfig, true, true, 10*time.Second)
 
 		// The backend's WAL min age is 10 minutes. After that the k8s objects
 		// should be cleaned up.
-		checkObjects(t, roleConfig, true, false, 15*time.Minute)
+		t.Log("Checking hanging objects have been cleaned up")
+		checkObjects(t, roleConfig, true, false, 1*time.Minute)
 	})
 }
 
