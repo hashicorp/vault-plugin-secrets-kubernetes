@@ -186,7 +186,7 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 	}
 
 	// Query by labels since we may not know the name
-	l := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]string))
+	l := makeExpectedLabels(t, asMapInterface(roleConfig["extra_labels"].(map[string]string)))
 	validatedSelector, err := labels.ValidatedSelectorFromSet(l)
 	require.NoError(t, err)
 	listOptions := metav1.ListOptions{
@@ -212,36 +212,11 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 	}
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = maxWaitTime
+	// Don't actually back off, just keep retrying quickly to speed up the test.
+	bo.Multiplier = 1
 
 	err = backoff.Retry(operation, bo)
 	assert.NoError(t, err, "timed out waiting for objects to exist=%v", shouldExist)
-}
-
-func verifyObjectsDeleted(t *testing.T, roleConfig map[string]interface{}, isClusterBinding bool) {
-	t.Helper()
-
-	k8sClient := newK8sClient(t, os.Getenv("SUPER_JWT"))
-	roleType := strings.ToLower(roleConfig["kubernetes_role_type"].(string))
-
-	// Query by labels since we may not know the name
-	l := makeExpectedLabels(t, asMapString(roleConfig["extra_labels"].(map[string]interface{})))
-	validatedSelector, err := labels.ValidatedSelectorFromSet(l)
-	require.NoError(t, err)
-	listOptions := metav1.ListOptions{
-		LabelSelector: validatedSelector.String(),
-	}
-
-	// Check the k8s objects that should be cleaned up
-
-	exists, err := checkRoleExists(k8sClient, listOptions, roleType)
-	require.NoError(t, err)
-	assert.False(t, exists)
-	exists, err = checkRoleBindingExists(k8sClient, listOptions, isClusterBinding)
-	require.NoError(t, err)
-	assert.False(t, exists)
-	exists, err = checkServiceAccountExists(k8sClient, listOptions)
-	require.NoError(t, err)
-	assert.False(t, exists)
 }
 
 func checkRoleExists(k8sClient kubernetes.Interface, listOptions metav1.ListOptions, roleType string) (bool, error) {
@@ -289,15 +264,4 @@ func checkRoleBindingExists(k8sClient kubernetes.Interface, listOptions metav1.L
 		}
 		return len(bindings.Items) > 0, nil
 	}
-}
-
-func checkServiceAccountExists(k8sClient kubernetes.Interface, listOptions metav1.ListOptions) (bool, error) {
-	acct, err := k8sClient.CoreV1().ServiceAccounts("test").List(context.Background(), listOptions)
-	if err != nil {
-		return false, err
-	}
-	if acct == nil {
-		return false, fmt.Errorf("service account list response was nil")
-	}
-	return len(acct.Items) > 0, nil
 }

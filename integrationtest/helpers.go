@@ -117,8 +117,8 @@ func verifyRole(t *testing.T, roleConfig map[string]interface{}, credsResponse *
 	roleName := credsResponse.Data["service_account_name"].(string)
 	roleType := strings.ToLower(roleConfig["kubernetes_role_type"].(string))
 
-	expectedLabels := makeExpectedLabels(t, asMapString(roleConfig["extra_labels"].(map[string]interface{})))
-	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
+	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
 	expectedRules := makeRules(t, roleConfig["generated_role_rules"].(string))
 
 	returnedLabels := map[string]string{}
@@ -153,8 +153,8 @@ func verifyBinding(t *testing.T, roleConfig map[string]interface{}, credsRespons
 	// or ClusterRole
 	objName := credsResponse.Data["service_account_name"].(string)
 
-	expectedLabels := makeExpectedLabels(t, asMapString(roleConfig["extra_labels"].(map[string]interface{})))
-	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
+	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
 	expectedSubjects := []rbacv1.Subject{
 		{
 			Kind:      "ServiceAccount",
@@ -194,8 +194,8 @@ func verifyServiceAccount(t *testing.T, roleConfig map[string]interface{}, creds
 	// or ClusterRole
 	objName := credsResponse.Data["service_account_name"].(string)
 
-	expectedLabels := makeExpectedLabels(t, asMapString(roleConfig["extra_labels"].(map[string]interface{})))
-	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
+	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
 
 	k8sClient := newK8sClient(t, os.Getenv("SUPER_JWT"))
 	acct, err := k8sClient.CoreV1().ServiceAccounts("test").Get(context.Background(), objName, metav1.GetOptions{})
@@ -409,16 +409,20 @@ func makeRules(t *testing.T, rules string) []rbacv1.PolicyRule {
 	return policyRules.Rules
 }
 
-func makeExpectedLabels(t *testing.T, userLabels map[string]string) map[string]string {
+func makeExpectedLabels(t *testing.T, extraLabels map[string]interface{}) map[string]string {
 	t.Helper()
 
 	expectedLabels := map[string]string{}
-	if userLabels != nil {
-		expectedLabels = combineMaps(userLabels, standardLabels)
+	if extraLabels != nil {
+		expectedLabels = combineMaps(asMapString(extraLabels), standardLabels)
 	} else {
 		expectedLabels = standardLabels
 	}
 	return expectedLabels
+}
+
+func makeExpectedAnnotations(extraAnnotations map[string]interface{}) map[string]string {
+	return asMapString(extraAnnotations)
 }
 
 func asMapInterface(m map[string]string) map[string]interface{} {
