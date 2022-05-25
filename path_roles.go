@@ -56,22 +56,22 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"allowed_kubernetes_namespaces": {
 					Type:        framework.TypeCommaStringSlice,
-					Description: `A list of the valid Kubernetes namespaces in which this role can be used for creating service accounts. If set to "*" all namespaces are allowed.`,
+					Description: `A list of the Kubernetes namespaces in which credentials can be generated. If set to "*" all namespaces are allowed.`,
 					Required:    true,
 				},
 				"token_max_ttl": {
 					Type:        framework.TypeDurationSecond,
-					Description: "The maximum valid ttl for generated Kubernetes tokens. If not set or set to 0, will use system default.",
+					Description: "The maximum ttl for generated Kubernetes service account tokens. If not set or set to 0, will use system default.",
 					Required:    false,
 				},
 				"token_default_ttl": {
 					Type:        framework.TypeDurationSecond,
-					Description: "The default ttl for generated Kubernetes service accounts. If not set or set to 0, will use system default.",
+					Description: "The default ttl for generated Kubernetes service account tokens. If not set or set to 0, will use system default.",
 					Required:    false,
 				},
 				"service_account_name": {
 					Type:        framework.TypeString,
-					Description: "The pre-existing service account to generate tokens for. Mutually exclusive with all role parameters. If set, only a Kubernetes token will be created.",
+					Description: "The pre-existing service account to generate tokens for. Mutually exclusive with all role parameters. If set, only a Kubernetes service account token will be created.",
 					Required:    false,
 				},
 				"kubernetes_role_name": {
@@ -97,12 +97,12 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"extra_labels": {
 					Type:        framework.TypeKVPairs,
-					Description: "Additional labels to apply to all generated object in Kubernetes.",
+					Description: "Additional labels to apply to all generated Kubernetes objects.",
 					Required:    false,
 				},
 				"extra_annotations": {
 					Type:        framework.TypeKVPairs,
-					Description: "Additional annotations to apply to all generated object in Kubernetes.",
+					Description: "Additional annotations to apply to all generated Kubernetes objects.",
 					Required:    false,
 				},
 			},

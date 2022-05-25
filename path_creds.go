@@ -58,7 +58,7 @@ func (b *backend) pathCredentials() *framework.Path {
 			},
 			"kubernetes_namespace": {
 				Type:        framework.TypeString,
-				Description: "The name of the Kubernetes namespace in which to generate the service account",
+				Description: "The name of the Kubernetes namespace in which to generate the credentials",
 				Required:    true,
 			},
 			"cluster_role_binding": {

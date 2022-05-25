@@ -208,6 +208,14 @@ func checkObjects(t *testing.T, roleConfig map[string]interface{}, isClusterBind
 		if exists != shouldExist {
 			return fmt.Errorf("binding (cluster %v) exists (%v) but should be (%v)", isClusterBinding, exists, shouldExist)
 		}
+
+		exists, err = checkServiceAccountExists(k8sClient, listOptions)
+		require.NoError(t, err)
+		// No permission to create services accounts, so they should never get created
+		if exists {
+			return fmt.Errorf("service account exists (%v) but should be (false)", exists)
+		}
+
 		return nil
 	}
 	bo := backoff.NewExponentialBackOff()
@@ -264,4 +272,15 @@ func checkRoleBindingExists(k8sClient kubernetes.Interface, listOptions metav1.L
 		}
 		return len(bindings.Items) > 0, nil
 	}
+}
+
+func checkServiceAccountExists(k8sClient kubernetes.Interface, listOptions metav1.ListOptions) (bool, error) {
+	acct, err := k8sClient.CoreV1().ServiceAccounts("test").List(context.Background(), listOptions)
+	if err != nil {
+		return false, err
+	}
+	if acct == nil {
+		return false, fmt.Errorf("service account list response was nil")
+	}
+	return len(acct.Items) > 0, nil
 }
