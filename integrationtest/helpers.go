@@ -118,7 +118,7 @@ func verifyRole(t *testing.T, roleConfig map[string]interface{}, credsResponse *
 	roleType := strings.ToLower(roleConfig["kubernetes_role_type"].(string))
 
 	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
-	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
 	expectedRules := makeRules(t, roleConfig["generated_role_rules"].(string))
 
 	returnedLabels := map[string]string{}
@@ -154,7 +154,7 @@ func verifyBinding(t *testing.T, roleConfig map[string]interface{}, credsRespons
 	objName := credsResponse.Data["service_account_name"].(string)
 
 	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
-	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
 	expectedSubjects := []rbacv1.Subject{
 		{
 			Kind:      "ServiceAccount",
@@ -195,7 +195,7 @@ func verifyServiceAccount(t *testing.T, roleConfig map[string]interface{}, creds
 	objName := credsResponse.Data["service_account_name"].(string)
 
 	expectedLabels := makeExpectedLabels(t, roleConfig["extra_labels"].(map[string]interface{}))
-	expectedAnnotations := makeExpectedAnnotations(roleConfig["extra_annotations"].(map[string]interface{}))
+	expectedAnnotations := asMapString(roleConfig["extra_annotations"].(map[string]interface{}))
 
 	k8sClient := newK8sClient(t, os.Getenv("SUPER_JWT"))
 	acct, err := k8sClient.CoreV1().ServiceAccounts("test").Get(context.Background(), objName, metav1.GetOptions{})
@@ -419,10 +419,6 @@ func makeExpectedLabels(t *testing.T, extraLabels map[string]interface{}) map[st
 		expectedLabels = standardLabels
 	}
 	return expectedLabels
-}
-
-func makeExpectedAnnotations(extraAnnotations map[string]interface{}) map[string]string {
-	return asMapString(extraAnnotations)
 }
 
 func asMapInterface(m map[string]string) map[string]interface{} {
