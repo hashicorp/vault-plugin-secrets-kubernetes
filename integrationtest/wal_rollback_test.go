@@ -168,8 +168,8 @@ func TestCreds_wal_rollback(t *testing.T) {
 		t.Log("Checking for hanging k8s objects")
 		checkObjects(t, roleConfig, true, true, 10*time.Second)
 
-		// The backend's WAL min age is 10 minutes. After that the k8s objects
-		// should be cleaned up.
+		// The backend's WAL min age is 10 seconds for tests. After that the k8s
+		// objects should be cleaned up.
 		t.Log("Checking hanging objects have been cleaned up")
 		checkObjects(t, roleConfig, true, false, 1*time.Minute)
 	})
