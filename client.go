@@ -228,6 +228,16 @@ func makeRules(rules string) ([]rbacv1.PolicyRule, error) {
 	return policyRules.Rules, nil
 }
 
+func makeLabelSelector(selector string) (metav1.LabelSelector, error) {
+	labelSelector := metav1.LabelSelector{}
+	decoder := k8s_yaml.NewYAMLOrJSONDecoder(strings.NewReader(selector), len(selector))
+	err := decoder.Decode(&labelSelector)
+	if err != nil {
+		return labelSelector, err
+	}
+	return labelSelector, nil
+}
+
 func makeRoleType(roleType string) string {
 	switch strings.ToLower(roleType) {
 	case "role":
