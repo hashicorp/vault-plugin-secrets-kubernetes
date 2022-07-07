@@ -65,17 +65,18 @@ func TestCreds_wal_rollback(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"allowed_kubernetes_namespaces": []interface{}{"test"},
-			"extra_annotations":             asMapInterface(extraAnnotations),
-			"extra_labels":                  asMapInterface(extraLabels),
-			"generated_role_rules":          roleRulesYAML,
-			"kubernetes_role_name":          "",
-			"kubernetes_role_type":          "Role",
-			"name":                          "walrole",
-			"name_template":                 "",
-			"service_account_name":          "",
-			"token_max_ttl":                 oneDay,
-			"token_default_ttl":             oneHour,
+			"allowed_kubernetes_namespaces":         []interface{}{"test"},
+		  "allowed_kubernetes_namespace_selector": "",
+			"extra_annotations":                     asMapInterface(extraAnnotations),
+			"extra_labels":                          asMapInterface(extraLabels),
+			"generated_role_rules":                  roleRulesYAML,
+			"kubernetes_role_name":                  "",
+			"kubernetes_role_type":                  "Role",
+			"name":                                  "walrole",
+			"name_template":                         "",
+			"service_account_name":                  "",
+			"token_max_ttl":                         oneDay,
+			"token_default_ttl":                     oneHour,
 		}
 
 		_, err := client.Logical().Write(mountPath+"/roles/walrole", roleConfig)
@@ -136,17 +137,18 @@ func TestCreds_wal_rollback(t *testing.T) {
 			"token_max_ttl":                 "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"allowed_kubernetes_namespaces": []interface{}{"test"},
-			"extra_annotations":             asMapInterface(extraAnnotations),
-			"extra_labels":                  asMapInterface(extraLabels),
-			"generated_role_rules":          "",
-			"kubernetes_role_name":          "test-cluster-role-list-pods",
-			"kubernetes_role_type":          "ClusterRole",
-			"name":                          "walrolebinding",
-			"name_template":                 "",
-			"service_account_name":          "",
-			"token_max_ttl":                 oneDay,
-			"token_default_ttl":             oneHour,
+			"allowed_kubernetes_namespaces":         []interface{}{"test"},
+		  "allowed_kubernetes_namespace_selector": "",
+			"extra_annotations":                     asMapInterface(extraAnnotations),
+			"extra_labels":                          asMapInterface(extraLabels),
+			"generated_role_rules":                  "",
+			"kubernetes_role_name":                  "test-cluster-role-list-pods",
+			"kubernetes_role_type":                  "ClusterRole",
+			"name":                                  "walrolebinding",
+			"name_template":                         "",
+			"service_account_name":                  "",
+			"token_max_ttl":                         oneDay,
+			"token_default_ttl":                     oneHour,
 		}
 
 		_, err := client.Logical().Write(mountPath+"/roles/walrolebinding", roleConfig)

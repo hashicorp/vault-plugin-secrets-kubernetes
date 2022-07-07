@@ -146,17 +146,18 @@ func TestRole(t *testing.T) {
 	result, err := client.Logical().Read(path + "/roles/testrole")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
-		"allowed_kubernetes_namespaces": []interface{}{"*"},
-		"extra_annotations":             nil,
-		"extra_labels":                  nil,
-		"generated_role_rules":          sampleRules,
-		"kubernetes_role_name":          "",
-		"kubernetes_role_type":          "Role",
-		"name":                          "testrole",
-		"name_template":                 "",
-		"service_account_name":          "",
-		"token_max_ttl":                 oneDay,
-		"token_default_ttl":             oneHour,
+		"allowed_kubernetes_namespaces":         []interface{}{"*"},
+		"allowed_kubernetes_namespace_selector": "",
+		"extra_annotations":                     nil,
+		"extra_labels":                          nil,
+		"generated_role_rules":                  sampleRules,
+		"kubernetes_role_name":                  "",
+		"kubernetes_role_type":                  "Role",
+		"name":                                  "testrole",
+		"name_template":                         "",
+		"service_account_name":                  "",
+		"token_max_ttl":                         oneDay,
+		"token_default_ttl":                     oneHour,
 	}, result.Data)
 
 	// update
@@ -170,17 +171,18 @@ func TestRole(t *testing.T) {
 	result, err = client.Logical().Read(path + "/roles/testrole")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{
-		"allowed_kubernetes_namespaces": []interface{}{"app1", "app2"},
-		"extra_annotations":             asMapInterface(sampleExtraAnnotations),
-		"extra_labels":                  asMapInterface(sampleExtraLabels),
-		"generated_role_rules":          sampleRules,
-		"kubernetes_role_name":          "",
-		"kubernetes_role_type":          "Role",
-		"name":                          "testrole",
-		"name_template":                 "",
-		"service_account_name":          "",
-		"token_max_ttl":                 oneDay,
-		"token_default_ttl":             thirtyMinutes,
+		"allowed_kubernetes_namespaces":         []interface{}{"app1", "app2"},
+		"allowed_kubernetes_namespace_selector": "",
+		"extra_annotations":                     asMapInterface(sampleExtraAnnotations),
+		"extra_labels":                          asMapInterface(sampleExtraLabels),
+		"generated_role_rules":                  sampleRules,
+		"kubernetes_role_name":                  "",
+		"kubernetes_role_type":                  "Role",
+		"name":                                  "testrole",
+		"name_template":                         "",
+		"service_account_name":                  "",
+		"token_max_ttl":                         oneDay,
+		"token_default_ttl":                     thirtyMinutes,
 	}, result.Data)
 
 	result, err = client.Logical().List(path + "/roles")
