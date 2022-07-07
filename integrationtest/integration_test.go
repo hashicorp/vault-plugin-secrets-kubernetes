@@ -185,6 +185,29 @@ func TestRole(t *testing.T) {
 		"token_default_ttl":                     thirtyMinutes,
 	}, result.Data)
 
+	// update again
+	_, err = client.Logical().Write(path+"/roles/testrole", map[string]interface{}{
+		"allowed_kubernetes_namespaces":         []string{},
+		"allowed_kubernetes_namespace_selector": sampleSelector,
+	})
+
+	result, err = client.Logical().Read(path + "/roles/testrole")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface{}{
+		"allowed_kubernetes_namespaces":         []interface{}{},
+		"allowed_kubernetes_namespace_selector": sampleSelector,
+		"extra_annotations":                     asMapInterface(sampleExtraAnnotations),
+		"extra_labels":                          asMapInterface(sampleExtraLabels),
+		"generated_role_rules":                  sampleRules,
+		"kubernetes_role_name":                  "",
+		"kubernetes_role_type":                  "Role",
+		"name":                                  "testrole",
+		"name_template":                         "",
+		"service_account_name":                  "",
+		"token_max_ttl":                         oneDay,
+		"token_default_ttl":                     thirtyMinutes,
+	}, result.Data)
+
 	result, err = client.Logical().List(path + "/roles")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]interface{}{"keys": []interface{}{"testrole"}}, result.Data)
@@ -287,11 +310,17 @@ func namespaceHelper(t *testing.T, client *api.Client) (*api.Client, func()) {
 	}
 }
 
-const sampleRules = `rules:
+const (
+	sampleRules = `rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 `
+
+	sampleSelector = `matchLabels:
+  target: integration-test
+`
+)
 
 var (
 	sampleExtraLabels = map[string]string{

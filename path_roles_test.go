@@ -32,7 +32,7 @@ func TestRoles(t *testing.T) {
 			"service_account_name": "test_svc_account",
 		})
 		assert.NoError(t, err)
-		assert.EqualError(t, resp.Error(), "one (and only one) of allowed_kubernetes_namespaces or allowed_kubernetes_namespace_selector must be set")
+		assert.EqualError(t, resp.Error(), "one (at least) of allowed_kubernetes_namespaces or allowed_kubernetes_namespace_selector must be set")
 
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespace_selector": badYAMLSelector,
@@ -118,6 +118,7 @@ func TestRoles(t *testing.T) {
 
 		// Create one with json namespace label selector
 		resp, err = testRoleCreate(t, b, s, "jsonselector", map[string]interface{}{
+			"allowed_kubernetes_namespaces":         []string{"test"},
 			"allowed_kubernetes_namespace_selector": goodJSONSelector,
 			"kubernetes_role_name":                  "existing_role",
 			"token_default_ttl":                     "5h",
@@ -129,7 +130,7 @@ func TestRoles(t *testing.T) {
 		require.NoError(t, err)
 		var nilMeta map[string]string
 		assert.Equal(t, map[string]interface{}{
-			"allowed_kubernetes_namespaces":         []string(nil),
+			"allowed_kubernetes_namespaces":         []string{"test"},
 			"allowed_kubernetes_namespace_selector": goodJSONSelector,
 			"extra_labels":                          nilMeta,
 			"extra_annotations":                     nilMeta,

@@ -66,7 +66,7 @@ func TestCreds_wal_rollback(t *testing.T) {
 		}
 		expectedRoleResponse := map[string]interface{}{
 			"allowed_kubernetes_namespaces":         []interface{}{"test"},
-		  "allowed_kubernetes_namespace_selector": "",
+			"allowed_kubernetes_namespace_selector": "",
 			"extra_annotations":                     asMapInterface(extraAnnotations),
 			"extra_labels":                          asMapInterface(extraLabels),
 			"generated_role_rules":                  roleRulesYAML,
@@ -128,17 +128,17 @@ func TestCreds_wal_rollback(t *testing.T) {
 			"checked": "again",
 		}
 		roleConfig := map[string]interface{}{
-			"allowed_kubernetes_namespaces": []string{"test"},
-			"extra_annotations":             extraAnnotations,
-			"extra_labels":                  extraLabels,
-			"kubernetes_role_name":          "test-cluster-role-list-pods",
-			"kubernetes_role_type":          "ClusterRole",
-			"token_default_ttl":             "1h",
-			"token_max_ttl":                 "24h",
+			"allowed_kubernetes_namespace_selector": `{"matchExpressions": [{"key": "target", "operator": "In", "values": ["integration-test"]}, {"key": "nonexistantlabel", "operator": "DoesNotExist", "values": []}]}`,
+			"extra_annotations":                     extraAnnotations,
+			"extra_labels":                          extraLabels,
+			"kubernetes_role_name":                  "test-cluster-role-list-pods",
+			"kubernetes_role_type":                  "ClusterRole",
+			"token_default_ttl":                     "1h",
+			"token_max_ttl":                         "24h",
 		}
 		expectedRoleResponse := map[string]interface{}{
-			"allowed_kubernetes_namespaces":         []interface{}{"test"},
-		  "allowed_kubernetes_namespace_selector": "",
+			"allowed_kubernetes_namespaces":         interface{}(nil),
+			"allowed_kubernetes_namespace_selector": `{"matchExpressions": [{"key": "target", "operator": "In", "values": ["integration-test"]}, {"key": "nonexistantlabel", "operator": "DoesNotExist", "values": []}]}`,
 			"extra_annotations":                     asMapInterface(extraAnnotations),
 			"extra_labels":                          asMapInterface(extraLabels),
 			"generated_role_rules":                  "",

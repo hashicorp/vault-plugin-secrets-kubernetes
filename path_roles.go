@@ -62,7 +62,7 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"allowed_kubernetes_namespace_selector": {
 					Type:        framework.TypeString,
-					Description: `A label selector in which credentials can be generated. Accepts either a JSON or YAML object.`,
+					Description: `A label selector for Kubernetes namespaces in which credentials can be generated. Accepts either a JSON or YAML object. If set with allowed_kubernetes_namespaces, the conditions are conjuncted.`,
 					Required:    false,
 				},
 				"token_max_ttl": {
@@ -231,8 +231,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 
 	// Validate the entry
-	if len(entry.K8sNamespaces) == 0 && entry.K8sNamespaceSelector == "" || len(entry.K8sNamespaces) != 0 && entry.K8sNamespaceSelector != "" {
-		return logical.ErrorResponse("one (and only one) of allowed_kubernetes_namespaces or allowed_kubernetes_namespace_selector must be set"), nil
+	if len(entry.K8sNamespaces) == 0 && entry.K8sNamespaceSelector == "" {
+		return logical.ErrorResponse("one (at least) of allowed_kubernetes_namespaces or allowed_kubernetes_namespace_selector must be set"), nil
 	}
 	if !onlyOneSet(entry.ServiceAccountName, entry.K8sRoleName, entry.RoleRules) {
 		return logical.ErrorResponse("one (and only one) of service_account_name, kubernetes_role_name or generated_role_rules must be set"), nil
