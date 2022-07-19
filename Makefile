@@ -7,6 +7,8 @@ KIND_K8S_VERSION?=v1.24.1
 PKG=github.com/hashicorp/vault-plugin-secrets-kubernetes
 LDFLAGS?="-X '$(PKG).WALRollbackMinAge=10s'"
 
+RUNNER_TEMP ?= $(TMPDIR)
+
 .PHONY: default
 default: dev
 
@@ -64,10 +66,10 @@ setup-integration-test-common: teardown-integration-test
 	kubectl create namespace test
 
 	# don't log the license
-	printenv VAULT_LICENSE_CI > ${TMPDIR}/vault-license.txt || true
-	if [[ -s ${TMPDIR}/vault-license.txt ]]; then \
-		kubectl -n test create secret generic vault-license --from-file license=${TMPDIR}/vault-license.txt; \
-		rm -rf ${TMPDIR}/vault-license.txt; \
+	printenv VAULT_LICENSE_CI > $(RUNNER_TEMP)/vault-license.txt || true
+	if [ -s $(RUNNER_TEMP)/vault-license.txt ]; then \
+		kubectl -n test create secret generic vault-license --from-file license=$(RUNNER_TEMP)/vault-license.txt; \
+		rm -rf $(RUNNER_TEMP)/vault-license.txt; \
 	fi
 
 	helm install vault vault --repo https://helm.releases.hashicorp.com --version=0.19.0 \
