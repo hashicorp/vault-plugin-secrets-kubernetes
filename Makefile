@@ -54,7 +54,7 @@ vault-image:
 .PHONY: vault-image-ent
 vault-image-ent:
 	GOOS=linux make dev
-	docker build -f integrationtest/vault/Dockerfile_ent bin/ --tag=hashicorp/vault:dev
+	docker build -f integrationtest/vault/Dockerfile --target enterprise bin/ --tag=hashicorp/vault:dev
 
 # Create Vault inside the cluster with a locally-built version of kubernetes secrets.
 .PHONY: setup-integration-test-common
@@ -64,9 +64,11 @@ setup-integration-test-common: teardown-integration-test
 	kubectl create namespace test
 
 	# don't log the license
-	env | grep '^VAULT_LICENSE_CI' | cut -d'=' -f2 > vault-license.txt
-	kubectl -n test create secret generic vault-license --from-file license=vault-license.txt
-	rm -rf vault-license.txt
+	printenv VAULT_LICENSE_CI > ${TMPDIR}/vault-license.txt || true
+	if [[ -s ${TMPDIR}/vault-license.txt ]]; then \
+		kubectl -n test create secret generic vault-license --from-file license=${TMPDIR}/vault-license.txt; \
+		rm -rf ${TMPDIR}/vault-license.txt; \
+	fi
 
 	helm install vault vault --repo https://helm.releases.hashicorp.com --version=0.19.0 \
 		--wait --timeout=5m \
@@ -94,7 +96,7 @@ setup-integration-test-ent: check-license vault-image-ent setup-integration-test
 
 .PHONY: check-license
 check-license:
-	(env | grep '^VAULT_LICENSE_CI' > /dev/null) || (echo "VAULT_LICENSE_CI must be set"; exit 1)
+	(printenv VAULT_LICENSE_CI > /dev/null) || (echo "VAULT_LICENSE_CI must be set"; exit 1)
 
 .PHONY: teardown-integration-test
 teardown-integration-test:
