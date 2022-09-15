@@ -5,9 +5,9 @@ go 1.17
 require (
 	github.com/hashicorp/go-hclog v0.16.2
 	github.com/hashicorp/go-secure-stdlib/fileutil v0.1.0
-	github.com/hashicorp/vault/api v1.5.0
-	github.com/hashicorp/vault/sdk v0.4.1
-	github.com/mitchellh/mapstructure v1.4.2
+	github.com/hashicorp/vault/api v1.7.2
+	github.com/hashicorp/vault/sdk v0.5.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.8.0
 	k8s.io/api v0.22.2
 )
@@ -36,8 +36,8 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/base62 v0.1.1 // indirect
 	github.com/hashicorp/go-secure-stdlib/mlock v0.1.1 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.1 // indirect
-	github.com/hashicorp/go-secure-stdlib/strutil v0.1.1
+	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.6 // indirect
+	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/hashicorp/go-version v1.2.0
