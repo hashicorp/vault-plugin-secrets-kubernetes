@@ -8,6 +8,7 @@
 ### Improvements
 
 * Test against Vault Enterprise [[GH-11](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/11)]
+* Role namespace configuration possible via LabelSelector [[GH-10](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/10)]
 * Update golang dependencies to avoid CVEs [[GH-14](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/14)]
   * golang.org/x/crypto@v0.0.0-20220314234659-1baeb1ce4c0b
   * golang.org/x/net@v0.0.0-20220906165146-f3363e06e74c
