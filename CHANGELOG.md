@@ -1,5 +1,7 @@
 ## Unreleased
 
+### Changes
+
 * Update to Go 1.19 [GH-15](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/15)
 * Update dependencies [GH-15](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/15):
 |             MODULE              | VERSION | NEW VERSION | DIRECT | VALID TIMESTAMPS |
