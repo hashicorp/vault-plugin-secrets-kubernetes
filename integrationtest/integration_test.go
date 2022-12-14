@@ -68,6 +68,23 @@ func TestMount(t *testing.T) {
 	defer umount()
 }
 
+func TestCheckViability(t *testing.T) {
+	client, err := api.NewClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path, umount := mountHelper(t, client)
+	defer umount()
+	client, delNamespace := namespaceHelper(t, client)
+	defer delNamespace()
+
+	// check
+	resp, err := client.Logical().ReadRaw(path + "/check")
+	assert.NoError(t, err)
+	assert.Equal(t, 204, resp.StatusCode)
+}
+
 func TestConfig(t *testing.T) {
 	// Pick up VAULT_ADDR and VAULT_TOKEN from env vars
 	client, err := api.NewClient(nil)
