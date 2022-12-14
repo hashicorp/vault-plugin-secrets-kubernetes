@@ -16,9 +16,7 @@ const (
 	checkHelpDescription = `Checks the Kubernetes configuration is valid, checking if required environment variables are set.`
 )
 
-var (
-	envVarsToCheck = []string{"KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT_HTTPS"}
-)
+var envVarsToCheck = []string{"KUBERNETES_SERVICE_HOST", "KUBERNETES_SERVICE_PORT_HTTPS"}
 
 func (b *backend) pathCheck() *framework.Path {
 	return &framework.Path{

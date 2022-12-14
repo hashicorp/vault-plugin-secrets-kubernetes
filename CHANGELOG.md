@@ -1,6 +1,6 @@
 ## Unreleased
 
-* Add `/check` endpoint to determine if environment variables are set [GH-???](???)
+* Add `/check` endpoint to determine if environment variables are set [GH-18](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/18)
 
 ### Changes
 
