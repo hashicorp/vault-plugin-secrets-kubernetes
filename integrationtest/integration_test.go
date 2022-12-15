@@ -82,7 +82,7 @@ func TestCheckViability(t *testing.T) {
 	// check
 	resp, err := client.Logical().ReadRaw(path + "/check")
 	assert.NoError(t, err)
-	assert.Equal(t, 204, resp.StatusCode)
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
 }
 
 func TestConfig(t *testing.T) {
