@@ -43,7 +43,7 @@ func (b *backend) pathCheckRead(_ context.Context, _ *logical.Request, _ *framew
 	if len(missing) == 0 {
 		return &logical.Response{
 			Data: map[string]interface{}{
-				logical.HTTPStatusCode: 204,
+				logical.HTTPStatusCode: http.StatusNoContent,
 			},
 		}, nil
 	}
