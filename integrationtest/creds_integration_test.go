@@ -125,6 +125,73 @@ func TestCreds_ttl(t *testing.T) {
 	}
 }
 
+// Test token audiences handling and defaults
+func TestCreds_audiences(t *testing.T) {
+	// Pick up VAULT_ADDR and VAULT_TOKEN from env vars
+	client, err := api.NewClient(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	path, umount := mountHelper(t, client)
+	defer umount()
+	client, delNamespace := namespaceHelper(t, client)
+	defer delNamespace()
+
+	// create default config
+	_, err = client.Logical().Write(path+"/config", map[string]interface{}{})
+	require.NoError(t, err)
+
+	type testCase struct {
+		roleConfig        map[string]interface{}
+		credsConfig       map[string]interface{}
+		expectedAudiences []string
+	}
+
+	tests := map[string]testCase{
+		"audiences set": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+				"audiences":            "vault,foobar",
+			},
+			expectedAudiences: []string{"vault", "foobar"},
+		},
+		"audiences not set": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedAudiences: []string{},
+		},
+	}
+	i := 0
+	for n, tc := range tests {
+		t.Run(n, func(t *testing.T) {
+			roleName := fmt.Sprintf("testrole-%d", i)
+			_, err = client.Logical().Write(path+"/roles/"+roleName, tc.roleConfig)
+			assert.NoError(t, err)
+
+			creds, err := client.Logical().Write(path+"/creds/"+roleName, tc.credsConfig)
+			assert.NoError(t, err)
+			require.NotNil(t, creds)
+
+			audiences := creds.Data["service_account_token_audiences"].([]interface{})
+			assert.Equal(t, len(tc.expectedAudiences), len(audiences))
+			for _, audience := range audiences {
+				assert.Contains(t, tc.expectedAudiences, audience.(string))
+			}
+		})
+		i = i + 1
+	}
+}
+
 func TestCreds_service_account_name(t *testing.T) {
 	// Pick up VAULT_ADDR and VAULT_TOKEN from env vars
 	client, err := api.NewClient(nil)
