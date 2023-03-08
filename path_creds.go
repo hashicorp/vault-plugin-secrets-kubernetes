@@ -292,10 +292,9 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	}
 
 	resp := b.Secret(kubeTokenType).Response(map[string]interface{}{
-		"service_account_namespace":       reqPayload.Namespace,
-		"service_account_name":            serviceAccountName,
-		"service_account_token":           token,
-		"service_account_token_audiences": reqPayload.Audiences,
+		"service_account_namespace": reqPayload.Namespace,
+		"service_account_name":      serviceAccountName,
+		"service_account_token":     token,
 	}, map[string]interface{}{
 		// the internal data is whatever we need to cleanup on revoke
 		// (service_account_name, role, role_binding).

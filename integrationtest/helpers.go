@@ -390,6 +390,18 @@ func testK8sTokenTTL(t *testing.T, expectedSec int, token string) {
 	assert.Equal(t, expectedSec, int(exp-iat))
 }
 
+func testK8sTokenAudiences(t *testing.T, expectedAudiences []string, token string) {
+	parsed, err := josejwt.ParseSigned(token)
+	require.NoError(t, err)
+	claims := map[string]interface{}{}
+	err = parsed.UnsafeClaimsWithoutVerification(&claims)
+	require.NoError(t, err)
+	aud := claims["aud"].([]interface{})
+	for _, audience := range expectedAudiences {
+		assert.Contains(t, aud, interface{}(audience))
+	}
+}
+
 func combineMaps(maps ...map[string]string) map[string]string {
 	newMap := make(map[string]string)
 	for _, m := range maps {

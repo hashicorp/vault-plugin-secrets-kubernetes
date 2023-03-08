@@ -156,9 +156,9 @@ func TestCreds_audiences(t *testing.T) {
 			},
 			credsConfig: map[string]interface{}{
 				"kubernetes_namespace": "test",
-				"audiences":            "vault,foobar",
+				"audiences":            "foo,bar",
 			},
-			expectedAudiences: []string{"vault", "foobar"},
+			expectedAudiences: []string{"foo", "bar"},
 		},
 		"audiences not set": {
 			roleConfig: map[string]interface{}{
@@ -182,11 +182,7 @@ func TestCreds_audiences(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, creds)
 
-			audiences := creds.Data["service_account_token_audiences"].([]interface{})
-			assert.Equal(t, len(tc.expectedAudiences), len(audiences))
-			for _, audience := range audiences {
-				assert.Contains(t, tc.expectedAudiences, audience.(string))
-			}
+			testK8sTokenAudiences(t, tc.expectedAudiences, creds.Data["service_account_token"].(string))
 		})
 		i = i + 1
 	}
