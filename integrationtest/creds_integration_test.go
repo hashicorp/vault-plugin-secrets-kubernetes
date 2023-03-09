@@ -145,22 +145,34 @@ func TestCreds_audiences(t *testing.T) {
 	type testCase struct {
 		roleConfig        map[string]interface{}
 		credsConfig       map[string]interface{}
-		expectedAudiences []string
+		expectedAudiences []interface{}
 	}
 
 	tests := map[string]testCase{
-		"audiences set": {
+		"both set": {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",
+				"token_default_audiences":       []string{"foo", "bar"},
 			},
 			credsConfig: map[string]interface{}{
 				"kubernetes_namespace": "test",
-				"audiences":            "foo,bar",
+				"audiences":            "baz,qux",
 			},
-			expectedAudiences: []string{"foo", "bar"},
+			expectedAudiences: []interface{}{"baz", "qux"},
 		},
-		"audiences not set": {
+		"default to token_default_audiences": {
+			roleConfig: map[string]interface{}{
+				"allowed_kubernetes_namespaces": []string{"*"},
+				"service_account_name":          "sample-app",
+				"token_default_audiences":       []string{"foo", "bar"},
+			},
+			credsConfig: map[string]interface{}{
+				"kubernetes_namespace": "test",
+			},
+			expectedAudiences: []interface{}{"foo", "bar"},
+		},
+		"default to audiences of k8s cluster setup if both not set": {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",
@@ -168,7 +180,7 @@ func TestCreds_audiences(t *testing.T) {
 			credsConfig: map[string]interface{}{
 				"kubernetes_namespace": "test",
 			},
-			expectedAudiences: []string{},
+			expectedAudiences: []interface{}{"https://kubernetes.default.svc.cluster.local"},
 		},
 	}
 	i := 0
@@ -227,6 +239,7 @@ func TestCreds_service_account_name(t *testing.T) {
 		"service_account_name":                  "sample-app",
 		"token_max_ttl":                         oneDay,
 		"token_default_ttl":                     oneHour,
+		"token_default_audiences":               nil,
 	}, roleResponse.Data)
 
 	result1, err := client.Logical().Write(path+"/creds/testrole", map[string]interface{}{
@@ -304,6 +317,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"service_account_name":                  "",
 			"token_max_ttl":                         oneDay,
 			"token_default_ttl":                     oneHour,
+			"token_default_audiences":               nil,
 		}
 		testRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -338,6 +352,7 @@ func TestCreds_kubernetes_role_name(t *testing.T) {
 			"service_account_name":                  "",
 			"token_max_ttl":                         oneDay,
 			"token_default_ttl":                     oneHour,
+			"token_default_audiences":               nil,
 		}
 		testClusterRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -407,6 +422,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"service_account_name":                  "",
 			"token_max_ttl":                         oneDay,
 			"token_default_ttl":                     oneHour,
+			"token_default_audiences":               nil,
 		}
 		testRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})
@@ -442,6 +458,7 @@ func TestCreds_generated_role_rules(t *testing.T) {
 			"service_account_name":                  "",
 			"token_max_ttl":                         oneDay,
 			"token_default_ttl":                     oneHour,
+			"token_default_audiences":               nil,
 		}
 		testClusterRoleType(t, client, path, roleConfig, expectedRoleResponse)
 	})

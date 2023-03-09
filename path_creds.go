@@ -216,6 +216,11 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 		theTTL = b.System().MaxLeaseTTL()
 	}
 
+	theAudiences := role.TokenDefaultAudiences
+	if len(reqPayload.Audiences) != 0 {
+		theAudiences = reqPayload.Audiences
+	}
+
 	// These are created items to save internally and/or return to the caller
 	token := ""
 	serviceAccountName := ""
@@ -228,7 +233,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	switch {
 	case role.ServiceAccountName != "":
 		// Create token for existing service account
-		status, err := client.createToken(ctx, reqPayload.Namespace, role.ServiceAccountName, theTTL, reqPayload.Audiences)
+		status, err := client.createToken(ctx, reqPayload.Namespace, role.ServiceAccountName, theTTL, theAudiences)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a service account token for %s/%s: %s", reqPayload.Namespace, role.ServiceAccountName, err)
 		}
@@ -250,7 +255,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 			return nil, err
 		}
 
-		status, err := client.createToken(ctx, reqPayload.Namespace, genName, theTTL, reqPayload.Audiences)
+		status, err := client.createToken(ctx, reqPayload.Namespace, genName, theTTL, theAudiences)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a service account token for %s/%s: %s", reqPayload.Namespace, genName, err)
 		}
@@ -277,7 +282,7 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 			return nil, err
 		}
 
-		status, err := client.createToken(ctx, reqPayload.Namespace, genName, theTTL, reqPayload.Audiences)
+		status, err := client.createToken(ctx, reqPayload.Namespace, genName, theTTL, theAudiences)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create a service account token for %s/%s: %s", reqPayload.Namespace, genName, err)
 		}
