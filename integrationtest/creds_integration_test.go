@@ -172,7 +172,7 @@ func TestCreds_audiences(t *testing.T) {
 			},
 			expectedAudiences: []interface{}{"foo", "bar"},
 		},
-		"default to audiences of k8s cluster setup if both not set": {
+		"default to audiences of k8s cluster default if both not set": {
 			roleConfig: map[string]interface{}{
 				"allowed_kubernetes_namespaces": []string{"*"},
 				"service_account_name":          "sample-app",

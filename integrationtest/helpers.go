@@ -397,10 +397,7 @@ func testK8sTokenAudiences(t *testing.T, expectedAudiences []interface{}, token 
 	err = parsed.UnsafeClaimsWithoutVerification(&claims)
 	require.NoError(t, err)
 	aud := claims["aud"].([]interface{})
-	assert.Equal(t, len(expectedAudiences), len(aud))
-	for _, expectedAudience := range expectedAudiences {
-		assert.Contains(t, aud, expectedAudience)
-	}
+	assert.ElementsMatch(t, expectedAudiences, aud)
 }
 
 func combineMaps(maps ...map[string]string) map[string]string {

@@ -81,7 +81,7 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"token_default_audiences": {
 					Type:        framework.TypeCommaStringSlice,
-					Description: "The default audiences for generated Kubernetes service account tokens. If not set or set to \"\", will use k8s cluster setup.",
+					Description: "The default audiences for generated Kubernetes service account tokens. If not set or set to \"\", will use k8s cluster default.",
 					Required:    false,
 				},
 				"service_account_name": {
@@ -213,7 +213,7 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		entry.TokenDefaultTTL = time.Duration(tokenTTLRaw.(int)) * time.Second
 	}
 	if tokenAudiencesRaw, ok := d.GetOk("token_default_audiences"); ok {
-		entry.TokenDefaultAudiences = strutil.RemoveDuplicates(tokenAudiencesRaw.([]string), true)
+		entry.TokenDefaultAudiences = strutil.RemoveDuplicates(tokenAudiencesRaw.([]string), false)
 	}
 	if svcAccount, ok := d.GetOk("service_account_name"); ok {
 		entry.ServiceAccountName = svcAccount.(string)
