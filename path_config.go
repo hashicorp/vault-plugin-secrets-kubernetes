@@ -44,7 +44,7 @@ func (b *backend) pathConfig() *framework.Path {
 	return &framework.Path{
 		Pattern: configPath,
 		DisplayAttrs: &framework.DisplayAttributes{
-			OperationPrefix: "kubernetes",
+			OperationPrefix: operationPrefixKubernetes,
 		},
 		Fields: map[string]*framework.FieldSchema{
 			"disable_local_ca_jwt": {

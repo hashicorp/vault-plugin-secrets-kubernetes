@@ -26,7 +26,7 @@ func (b *backend) pathCheck() *framework.Path {
 	return &framework.Path{
 		Pattern: checkPath + "/?$",
 		DisplayAttrs: &framework.DisplayAttributes{
-			OperationPrefix: "kubernetes",
+			OperationPrefix: operationPrefixKubernetes,
 			OperationVerb:   "check",
 			OperationSuffix: "configuration",
 		},

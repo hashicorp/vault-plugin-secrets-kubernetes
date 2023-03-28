@@ -56,7 +56,7 @@ func (b *backend) pathCredentials() *framework.Path {
 	return &framework.Path{
 		Pattern: pathCreds + framework.GenericNameRegex("name"),
 		DisplayAttrs: &framework.DisplayAttributes{
-			OperationPrefix: "kubernetes",
+			OperationPrefix: operationPrefixKubernetes,
 			OperationVerb:   "generate",
 			OperationSuffix: "credentials",
 		},

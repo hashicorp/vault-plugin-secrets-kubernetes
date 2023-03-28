@@ -54,7 +54,7 @@ func (b *backend) pathRoles() []*framework.Path {
 		{
 			Pattern: rolesPath + framework.GenericNameRegex("name"),
 			DisplayAttrs: &framework.DisplayAttributes{
-				OperationPrefix: "kubernetes",
+				OperationPrefix: operationPrefixKubernetes,
 				OperationSuffix: "role",
 			},
 			Fields: map[string]*framework.FieldSchema{
@@ -146,7 +146,7 @@ func (b *backend) pathRoles() []*framework.Path {
 		{
 			Pattern: rolesPath + "?$",
 			DisplayAttrs: &framework.DisplayAttributes{
-				OperationPrefix: "kubernetes",
+				OperationPrefix: operationPrefixKubernetes,
 				OperationSuffix: "roles",
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
