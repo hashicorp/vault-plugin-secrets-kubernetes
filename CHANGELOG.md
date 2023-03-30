@@ -1,14 +1,13 @@
 ## Unreleased
 
-## 0.3.1 (March 27, 2023)
+## 0.4.0 (March 30, 2023)
 
-### FEATURES:
+### Features:
 
 * add `audiences` option to set audiences for the k8s token created from the TokenRequest API, and add `token_default_audiences`
 option to set the default audiences on role write [GH-24](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/24)
 
-
-### CHANGES:
+### Changes:
 
 * enable plugin multiplexing [GH-23](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/23)
 * update dependencies
