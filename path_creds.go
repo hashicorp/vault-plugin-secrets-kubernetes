@@ -123,7 +123,6 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 
 	// Validate the request
 	isValidNs, err := b.isValidKubernetesNamespace(ctx, req, request, roleEntry)
-	fmt.Println("thy", isValidNs, request.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("error verifying namespace: %w", err)
 	}
