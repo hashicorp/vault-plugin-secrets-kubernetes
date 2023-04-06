@@ -548,7 +548,7 @@ func TestCreds_kubernetes_namespace(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			roleName := fmt.Sprintf("testrole-%d", i)
 			_, err = client.Logical().Write(path+"/roles/"+roleName, tc.roleConfig)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			creds, err := client.Logical().Write(path+"/creds/"+roleName, tc.credsConfig)
 			assert.Equal(t, tc.expectedCredsCreateErrIsNil, err == nil)
