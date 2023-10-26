@@ -49,6 +49,8 @@ jobs:
       - env:
           VAULT_LICENSE_CI: ${{ secrets.VAULT_LICENSE_CI }}
         run: make setup-integration-test${{ matrix.enterprise }}
+      - if: failure()
+        run: kubectl logs vault-0
       - env:
           INTEGRATION_TESTS: true
         run: make integration-test TESTARGS="-v"
