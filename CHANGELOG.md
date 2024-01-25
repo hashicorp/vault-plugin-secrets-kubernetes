@@ -12,10 +12,11 @@
   * golang.org/x/text v0.13.0 -> v0.14.0
   * github.com/docker/docker v24.0.5 -> v24.0.7
   * github.com/hashicorp/vault/sdk v0.10.0 -> v0.10.2
-  * k8s.io/api v0.28.1 -> v0.28.3
-  * k8s.io/apimachinery v0.28.1 -> v0.28.3
-  * k8s.io/client-go v0.28.1 -> v0.28.3
+  * k8s.io/api v0.28.1 -> v0.29.0
+  * k8s.io/apimachinery v0.28.1 -> v0.29.0
+  * k8s.io/client-go v0.28.1 -> v0.29.0
   * github.com/go-jose/go-jose/v3 v3.0.0 -> v3.0.1
+  * github.com/go-hclog v1.5.0 -> v1.6.2
 
 ## 0.6.0 (September 6th, 2023)
 
