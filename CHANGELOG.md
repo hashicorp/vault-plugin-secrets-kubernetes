@@ -1,22 +1,28 @@
 ## Unreleased
 
+## 0.7.0 (February 2nd, 2024)
+
 ### Changes
 
 * Building with go 1.21.3
 * Testing with k8s 1.24-1.28
 * Dependency updates
   * golang.org/x/crypto v0.13.0 -> v0.17.0
-  * golang.org/x/net v0.15.0 -> v0.17.0
+  * golang.org/x/net v0.15.0 -> v0.19.0
   * golang.org/x/sys v0.12.0 -> v0.15.0
   * golang.org/x/term v0.12.0 -> v0.15.0
+  * golang.org/x/mod v0.12.0 -> v0.14.0
   * golang.org/x/text v0.13.0 -> v0.14.0
+  * golang.org/x/tools v0.12.0 -> v0.16.1
   * github.com/docker/docker v24.0.5 -> v24.0.7
   * github.com/hashicorp/vault/sdk v0.10.0 -> v0.10.2
-  * k8s.io/api v0.28.1 -> v0.29.0
-  * k8s.io/apimachinery v0.28.1 -> v0.29.0
-  * k8s.io/client-go v0.28.1 -> v0.29.0
+  * k8s.io/api v0.28.1 -> v0.29.1
+  * k8s.io/apimachinery v0.28.1 -> v0.29.1
+  * k8s.io/client-go v0.28.1 -> v0.29.1
   * github.com/go-jose/go-jose/v3 v3.0.0 -> v3.0.1
   * github.com/go-hclog v1.5.0 -> v1.6.2
+  * github.com/hashicorp/vault/api v1.11.0
+  * github.com/hashicorp/vault/sdk v0.10.2
 
 ## 0.6.0 (September 6th, 2023)
 
