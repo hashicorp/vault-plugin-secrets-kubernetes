@@ -336,9 +336,9 @@ func (b *backend) createCreds(ctx context.Context, req *logical.Request, role *r
 	case err != nil:
 		return nil, fmt.Errorf("failed to read TTL of created Kubernetes token for %s/%s: %s", reqPayload.Namespace, genName, err)
 	case createdTokenTTL > theTTL:
-		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service accout token TTL %v is greater than the Vault lease TTL %v", createdTokenTTL, theTTL))
+		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service account token TTL %v is greater than the Vault lease TTL %v", createdTokenTTL, theTTL))
 	case createdTokenTTL < theTTL:
-		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service accout token TTL %v is less than the Vault lease TTL %v; capping the lease TTL accordingly", createdTokenTTL, theTTL))
+		respWarning = append(respWarning, fmt.Sprintf("the created Kubernetes service account token TTL %v is less than the Vault lease TTL %v; capping the lease TTL accordingly", createdTokenTTL, theTTL))
 		resp.Secret.TTL = createdTokenTTL
 	}
 
