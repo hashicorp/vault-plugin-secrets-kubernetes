@@ -175,7 +175,7 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 		},
 	}
 	roleRef := rbacv1.RoleRef{
-		Kind: vaultRole.K8sRoleType,
+		Kind: vaultRole.K8sRoleRefType,
 		Name: k8sRoleName,
 	}
 
