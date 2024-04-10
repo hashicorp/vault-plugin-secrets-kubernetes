@@ -3,6 +3,7 @@
 ### Changes
 
 * Dependency updates
+  * `github.com/docker/docker` v24.0.7+incompatible -> v24.0.9+incompatible
   * `github.com/go-jose/go-jose/v3` v3.0.1 -> v3.0.3
   * `github.com/hashicorp/vault/api` v1.11.0 -> v1.12.2
   * `github.com/hashicorp/vault/sdk` v0.10.2 -> v0.11.1
