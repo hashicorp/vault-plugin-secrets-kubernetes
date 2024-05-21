@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
+	josejwt "github.com/go-jose/go-jose/jwt"
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	josejwt "gopkg.in/square/go-jose.v2/jwt"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_yaml "k8s.io/apimachinery/pkg/util/yaml"
