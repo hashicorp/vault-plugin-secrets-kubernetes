@@ -2,6 +2,7 @@
 
 ### Changes
 
+* Update `gopkg.in/square/go-jose.v2` to `github.com/go-jose/go-jose/v4`
 * Dependency updates
   * `github.com/docker/docker` v24.0.7+incompatible -> v24.0.9+incompatible
   * `github.com/go-jose/go-jose/v3` v3.0.1 -> v3.0.3
