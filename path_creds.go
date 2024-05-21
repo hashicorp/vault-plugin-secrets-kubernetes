@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
+	josejwt "github.com/go-jose/go-jose/v4/jwt"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
-	josejwt "gopkg.in/square/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -45,6 +46,12 @@ type credsRequest struct {
 type nameMetadata struct {
 	DisplayName string
 	RoleName    string
+}
+
+var allowedSignatureAlgs = []jose.SignatureAlgorithm{
+	jose.RS256,
+	jose.ES256,
+	jose.HS256,
 }
 
 func (b *backend) pathCredentials() *framework.Path {
@@ -444,7 +451,7 @@ func createRoleWithWAL(ctx context.Context, client *client, s logical.Storage, n
 }
 
 func getTokenTTL(token string) (time.Duration, error) {
-	parsed, err := josejwt.ParseSigned(token)
+	parsed, err := josejwt.ParseSigned(token, allowedSignatureAlgs)
 	if err != nil {
 		return 0, err
 	}
