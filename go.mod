@@ -2,7 +2,7 @@ module github.com/hashicorp/vault-plugin-secrets-kubernetes
 
 go 1.21
 
-toolchain go1.21.3
+toolchain go1.22.2
 
 require (
 	github.com/cenkalti/backoff/v3 v3.2.2
@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/vault/sdk v0.11.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/stretchr/testify v1.9.0
-	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v0.29.3
