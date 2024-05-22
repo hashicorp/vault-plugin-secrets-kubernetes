@@ -3,7 +3,7 @@
 ## 0.8.0 (May 21, 2024)
 ### Changes
 
-* Update `gopkg.in/square/go-jose` v2.6.0 to `github.com/go-jose/go-jose` v2.6.3
+* Update `gopkg.in/square/go-jose` v2.6.0 to `gopkg.in.com/go-jose/go-jose.v2` v2.6.3
 * Dependency updates
   * `github.com/docker/docker` v24.0.7+incompatible -> v24.0.9+incompatible
   * `github.com/go-jose/go-jose/v3` v3.0.1 -> v3.0.3
