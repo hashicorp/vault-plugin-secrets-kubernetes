@@ -2,6 +2,8 @@
 
 ### Changes
 
+* Building with go 1.22.4
+* Testing with k8s 1.26-1.30
 * Dependency updates
   * `github.com/hashicorp/go-hclog` v1.6.2 -> v1.6.3
   * `github.com/hashicorp/go-version` v1.6.0 -> v1.7.0
