@@ -3,12 +3,27 @@
 ### Changes
 
 * Dependency updates
+  * `github.com/hashicorp/go-hclog` v1.6.2 -> v1.6.3
+  * `github.com/hashicorp/go-version` v1.6.0 -> v1.7.0
+  * `github.com/hashicorp/vault/api` v1.12.2 -> v1.14.0
+  * `github.com/hashicorp/vault/sdk` v0.11.1 -> v0.13.0
+  * `k8s.io/api` v0.29.3 -> v0.30.1
+  * `k8s.io/apimachinery` v0.29.3 -> v0.30.1
+  * `k8s.io/client-go` v0.29.3 -> v0.30.1
+
+## 0.8.0 (May 21, 2024)
+### Changes
+
+* Update `gopkg.in/square/go-jose` v2.6.0 to `gopkg.in.com/go-jose/go-jose.v2` v2.6.3
+* Dependency updates
+  * `github.com/docker/docker` v24.0.7+incompatible -> v24.0.9+incompatible
   * `github.com/go-jose/go-jose/v3` v3.0.1 -> v3.0.3
-  * `github.com/hashicorp/vault/api` v1.11.0 -> v1.12.0
-  * `github.com/hashicorp/vault/sdk` v0.10.2 -> v0.11.0
-  * `k8s.io/api` v0.29.1 -> v0.29.2
-  * `k8s.io/apimachinery` v0.29.1 -> v0.29.2
-  * `k8s.io/client-go` v0.29.1 -> v0.29.2
+  * `github.com/hashicorp/vault/api` v1.11.0 -> v1.12.2
+  * `github.com/hashicorp/vault/sdk` v0.10.2 -> v0.11.1
+  * `github.com/stretchr/testify` v1.8.4 -> v1.9.0
+  * `k8s.io/api` v0.29.1 -> v0.29.3
+  * `k8s.io/apimachinery` v0.29.1 -> v0.29.3
+  * `k8s.io/client-go` v0.29.1 -> v0.29.3
 
 ## 0.7.0 (February 2nd, 2024)
 
