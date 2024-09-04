@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
+	josejwt "github.com/go-jose/go-jose/v4/jwt"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/helper/strutil"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
-	josejwt "gopkg.in/go-jose/go-jose.v2/jwt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -32,6 +33,20 @@ bindings. The service account token and any other objects created in
 Kubernetes will be automatically deleted when the lease has expired.
 `
 )
+
+// AllowedSigningAlgs contains all signing algorithms supported by k8s OIDC.
+// ref: https://github.com/kubernetes/kubernetes/blob/b4935d910dcf256288694391ef675acfbdb8e7a3/staging/src/k8s.io/apiserver/plugin/pkg/authenticator/token/oidc/oidc.go#L222-L233
+var AllowedSigningAlgs = []jose.SignatureAlgorithm{
+	jose.RS256,
+	jose.RS384,
+	jose.RS512,
+	jose.ES256,
+	jose.ES384,
+	jose.ES512,
+	jose.PS256,
+	jose.PS384,
+	jose.PS512,
+}
 
 type credsRequest struct {
 	Namespace          string        `json:"kubernetes_namespace"`
@@ -444,7 +459,7 @@ func createRoleWithWAL(ctx context.Context, client *client, s logical.Storage, n
 }
 
 func getTokenTTL(token string) (time.Duration, error) {
-	parsed, err := josejwt.ParseSigned(token)
+	parsed, err := josejwt.ParseSigned(token, AllowedSigningAlgs)
 	if err != nil {
 		return 0, err
 	}
