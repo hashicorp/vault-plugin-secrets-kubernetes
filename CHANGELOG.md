@@ -1,17 +1,22 @@
 ## Unreleased
 
+
+## 0.9.0 (Sept 5, 2024)
 ### Changes
 
-* Building with go 1.22.4
-* Testing with k8s 1.26-1.30
+* Build with go 1.22.4
+* Test with k8s 1.26-1.30
+* Migrate from gopkg.in/go-jose/go-jose.v2 to github.com/go-jose/go-jose/v4
+
 * Dependency updates
   * `github.com/hashicorp/go-hclog` v1.6.2 -> v1.6.3
   * `github.com/hashicorp/go-version` v1.6.0 -> v1.7.0
   * `github.com/hashicorp/vault/api` v1.12.2 -> v1.14.0
   * `github.com/hashicorp/vault/sdk` v0.11.1 -> v0.13.0
-  * `k8s.io/api` v0.29.3 -> v0.30.3
-  * `k8s.io/apimachinery` v0.29.3 -> v0.30.3
-  * `k8s.io/client-go` v0.29.3 -> v0.30.3
+  * `k8s.io/api` v0.29.3 -> v0.31.0
+  * `k8s.io/apimachinery` v0.29.3 -> v0.31.0
+  * `k8s.io/client-go` v0.29.3 -> v0.31.0
+
 
 ## 0.8.0 (May 21, 2024)
 ### Changes
