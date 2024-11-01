@@ -1,5 +1,12 @@
 ## Unreleased
+### Changes
 
+* Dependency updates
+  * `github.com/hashicorp/vault/api` v1.14.0 -> v1.15.0
+  * `github.com/hashicorp/vault/sdk` v0.13.0 -> v0.14.0
+  * `k8s.io/api` v0.31.0 -> v0.31.2
+  * `k8s.io/apimachinery` v0.31.0 -> v0.31.2
+  * `k8s.io/client-go` v0.31.0 -> v0.31.2
 
 ## 0.9.0 (Sept 5, 2024)
 ### Changes
