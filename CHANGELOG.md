@@ -1,6 +1,8 @@
 ## Unreleased
 ### Changes
 
+* Test with k8s 1.27-1.31
+
 * Dependency updates
   * `github.com/hashicorp/vault/api` v1.14.0 -> v1.15.0
   * `github.com/hashicorp/vault/sdk` v0.13.0 -> v0.14.0

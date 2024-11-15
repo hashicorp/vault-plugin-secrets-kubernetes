@@ -2,7 +2,7 @@
 KIND_CLUSTER_NAME?=vault-plugin-secrets-kubernetes
 
 # kind k8s version
-KIND_K8S_VERSION?=v1.26.2
+KIND_K8S_VERSION?=v1.31.2
 
 PKG=github.com/hashicorp/vault-plugin-secrets-kubernetes
 LDFLAGS?="-X '$(PKG).WALRollbackMinAge=10s'"
@@ -73,7 +73,7 @@ setup-integration-test-common: teardown-integration-test
 		rm -rf $(RUNNER_TEMP)/vault-license.txt; \
 	fi
 
-	helm install vault vault --repo https://helm.releases.hashicorp.com --version=0.24.1 \
+	helm install vault vault --repo https://helm.releases.hashicorp.com --version=0.29.0 \
 		--wait --timeout=5m \
 		--namespace=test \
 		--set server.logLevel=debug \
