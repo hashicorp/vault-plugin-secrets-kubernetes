@@ -85,6 +85,14 @@ func TestRoles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_type must be either 'Role' or 'ClusterRole'")
 
+		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"kubernetes_role_ref_type":      "notARoleType",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
+
 		resp, err = testRoleCreate(t, b, s, "badttl_tokenmax", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"service_account_name":          "test_svc_account",
@@ -141,6 +149,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  "",
 			"kubernetes_role_name":                  "existing_role",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "jsonselector",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -171,6 +180,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  "",
 			"kubernetes_role_name":                  "existing_role",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlselector",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -199,6 +209,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodJSONRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "jsonrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -229,6 +240,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodYAMLRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -253,6 +265,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodYAMLRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
