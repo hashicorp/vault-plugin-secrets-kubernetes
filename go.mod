@@ -6,7 +6,7 @@ toolchain go1.23.5
 
 require (
 	github.com/cenkalti/backoff/v3 v3.2.2
-	github.com/go-jose/go-jose/v4 v4.0.4
+	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-secure-stdlib/fileutil v0.1.0
