@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kind-k8s-version: [1.28.15, 1.29.14, 1.30.10, 1.31.6, 1.32.2]
+        kind-k8s-version: [1.28.15, 1.29.14, 1.30.10, 1.31.6, 1.32.3]
         enterprise: ["", "-ent"]
     name: Integration test ${{ matrix.enterprise }} kind ${{ matrix.kind-k8s-version }}
     steps:
