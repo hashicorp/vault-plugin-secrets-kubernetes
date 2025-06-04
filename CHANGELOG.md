@@ -1,15 +1,17 @@
 ## Unreleased
+
+## 0.11.0 (June 4, 2025)
 ### Changes
 
-* Test with k8s 1.28-1.32
-* Build with Go 1.23.7
-
+* Build with Go 1.24.3
+* Test with k8s 1.29-1.33
 * Dependency updates:
-  * github.com/go-jose/go-jose/v4 v4.0.4 -> v4.0.5
-  * github.com/hashicorp/vault/sdk v0.15.0 -> v0.15.2
-  * k8s.io/api v0.32.1 -> v0.32.2
-  * k8s.io/apimachinery v0.32.1 -> v0.32.2
-  * k8s.io/client-go v0.32.1 -> v0.32.2
+  * `github.com/go-jose/go-jose/v4` v4.0.4 -> v4.1.0
+  * `github.com/hashicorp/vault/sdk` v0.15.0 -> v0.17.0
+  * `k8s.io/api` v0.32.1 -> v0.33.1
+  * `k8s.io/apimachinery` v0.32.1 -> v0.33.1
+  * `k8s.io/client-go` v0.32.1 -> v0.33.1
+  
 
 ## 0.10.0 (February 12, 2025)
 ### Changes
