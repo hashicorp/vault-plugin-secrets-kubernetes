@@ -1,3 +1,17 @@
+## v0.12.0
+### October 2, 2025
+
+* Bump actions/setup-go in the github-actions-breaking group (#110)
+* Preparing for Vault 1.21 release (v0.12.0) (#111)
+* [COMPLIANCE] Add Copyright and License Headers (#109)
+* Automated dependency upgrades (#108)
+* init changie (#107)
+* Bump actions/checkout in the github-actions-breaking group (#106)
+* Automated dependency upgrades (#100)
+* Add backport assistant workflow (#104)
+* Add backport assistant workflow (#102)
+* [Compliance] - PR Template Changes Required (#101)
+
 ## 0.11.0 (June 4, 2025)
 ### Changes
 
