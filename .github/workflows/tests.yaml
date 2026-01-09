@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kind-k8s-version: [1.29.14, 1.30.13, 1.31.12, 1.32.8, 1.33.4]
+        kind-k8s-version: [1.31.14, 1.32.11, 1.33.7, 1.34.3, 1.35.0]
         enterprise: ["", "-ent"]
     name: Integration test ${{ matrix.enterprise }} kind ${{ matrix.kind-k8s-version }}
     steps:
@@ -39,7 +39,7 @@ jobs:
       - name: Create K8s Kind Cluster
         uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:
-          version: v0.30.0
+          version: v0.31.0
           cluster_name: vault-plugin-secrets-kubernetes
           config: integrationtest/kind/config.yaml
           node_image: kindest/node:v${{ matrix.kind-k8s-version }}
