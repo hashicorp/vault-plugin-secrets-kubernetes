@@ -3,6 +3,18 @@
 * Tested with Kubernetes versions 1.35-1.31
 * Test with Kind v0.31.0
 
+## v0.13.0
+### March 16, 2026
+
+Update dependencies (#123):
+   * go 1.25.0 => 1.26.1
+   * github.com/hashicorp/vault/sdk v0.19.0 => v0.23.0
+   * golang.org/x/oauth2 v0.28.0 => v0.30.0
+   * github.com/hashicorp/vault/api v1.21.0 => v1.22.0
+   * google.golang.org/protobuf v1.36.5 => v1.36.8
+   * github.com/go-logr/logr v1.4.2 => v1.4.3
+   * github.com/go-jose/go-jose/v4 v4.1.2 => v4.1.3
+
 ## v0.12.0
 ### October 2, 2025
 
