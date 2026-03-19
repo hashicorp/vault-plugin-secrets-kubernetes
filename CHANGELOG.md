@@ -2,11 +2,16 @@
 ### March 19, 2026
 
 * Automated dependency upgrades (#126)
+## v0.13.0
+### March 18, 2026
 
-## Unreleased
-
-* Tested with Kubernetes versions 1.35-1.31
-* Test with Kind v0.31.0
+* prepare v0.13.0 release (#123)
+* Bump golang.org/x/crypto from 0.40.0 to 0.45.0 (#116)
+* [COMPLIANCE] Update Copyright and License Headers (Batch 1 of 1) (#119)
+* CI: test against k8s 1.35 (#120)
+* Bump helm/kind-action in the github-actions-backward-compatible group (#115)
+* chore: remove changie (#113)
+* Update changelog for v0.12.0 release (#112)
 
 ## v0.13.0
 ### March 16, 2026
