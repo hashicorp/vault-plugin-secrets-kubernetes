@@ -1,3 +1,8 @@
+## v0.13.1
+### March 19, 2026
+
+* Automated dependency upgrades (#126)
+
 ## Unreleased
 
 * Tested with Kubernetes versions 1.35-1.31
