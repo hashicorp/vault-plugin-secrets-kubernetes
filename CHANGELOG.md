@@ -1,3 +1,7 @@
+## v0.13.1
+### March 19, 2026
+
+* Automated dependency upgrades (#126)
 ## v0.13.0
 ### March 18, 2026
 
@@ -8,11 +12,6 @@
 * Bump helm/kind-action in the github-actions-backward-compatible group (#115)
 * chore: remove changie (#113)
 * Update changelog for v0.12.0 release (#112)
-
-## Unreleased
-
-* Tested with Kubernetes versions 1.35-1.31
-* Test with Kind v0.31.0
 
 ## v0.13.0
 ### March 16, 2026
