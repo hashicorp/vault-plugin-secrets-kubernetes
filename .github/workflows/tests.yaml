@@ -49,6 +49,11 @@ jobs:
       - env:
           VAULT_LICENSE_CI: ${{ secrets.VAULT_LICENSE_CI }}
         run: make setup-integration-test${{ matrix.enterprise }}
+      - name: Debug vault pod failure
+        if: failure()
+        run: |
+          kubectl describe pod vault-0 --namespace=test
+          kubectl logs vault-0 --namespace=test || true
       - env:
           INTEGRATION_TESTS: true
         run: make integration-test TESTARGS="-v"
