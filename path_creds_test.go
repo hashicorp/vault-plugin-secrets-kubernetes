@@ -18,7 +18,7 @@ import (
 //
 //	✅  Role        + RoleBinding         (default, namespace-scoped)
 //	✅  ClusterRole + ClusterRoleBinding  (cluster-wide)
-//	✅  ClusterRole + RoleBinding         ("reusable template" pattern)
+//	✅  RoleBinding → ClusterRole ref     ("reusable template" pattern)
 //	❌  Role/any    + ClusterRoleBinding  where roleRef.kind == Role
 func TestRoleBindingCombinations(t *testing.T) {
 	b, s := getTestBackend(t)
@@ -78,10 +78,10 @@ func TestRoleBindingCombinations(t *testing.T) {
 		_ = err
 	})
 
-	// ── combination 3: ClusterRole + RoleBinding ("reusable template") ───────
+	// ── combination 3: RoleBinding → ClusterRole ref ("reusable template") ───
 	// kubernetes_role_type=Role (→ RoleBinding), kubernetes_role_ref_type=ClusterRole,
 	// cluster_role_binding=false → valid
-	t.Run("ClusterRole+RoleBinding reusable-template is valid", func(t *testing.T) {
+	t.Run("RoleBinding->ClusterRole ref reusable-template is valid", func(t *testing.T) {
 		_, err := testRoleCreate(t, b, s, "combo-cr-rb", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1"},
 			"kubernetes_role_name":          "my-cluster-role",

@@ -114,7 +114,7 @@ func (b *backend) pathRoles() []*framework.Path {
 				},
 				"kubernetes_role_ref_type": {
 					Type:        framework.TypeString,
-					Description: "Specifies whether the Kubernetes role used as the RoleRef in the RoleBinding or ClusterRoleBinding is a Role or ClusterRole. If omitted, defaults to the value of kubernetes_role_type. Only relevant when kubernetes_role_name is set.",
+					Description: "Specifies whether the Kubernetes role used as the RoleRef in the RoleBinding or ClusterRoleBinding is a Role or ClusterRole. If omitted, defaults to the value of kubernetes_role_type. Only relevant when kubernetes_role_name is set; has no effect when service_account_name or generated_role_rules is used.",
 					Required:    false,
 				},
 				"generated_role_rules": {
