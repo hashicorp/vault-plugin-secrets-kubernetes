@@ -149,7 +149,13 @@ func (b *backend) pathCredentialsRead(ctx context.Context, req *logical.Request,
 	if !isValidNs {
 		return logical.ErrorResponse(fmt.Sprintf("kubernetes_namespace '%s' is not present in role's allowed_kubernetes_namespaces or does not match role's label selector allowed_kubernetes_namespace_selector", request.Namespace)), nil
 	}
-	if request.ClusterRoleBinding && roleEntry.K8sRoleType == "Role" {
+	// Resolve the effective roleRef kind — K8sRoleRefType takes precedence when set
+	// (falls back to K8sRoleType for roles stored before the field was introduced).
+	roleRefKind := roleEntry.K8sRoleRefType
+	if roleRefKind == "" {
+		roleRefKind = roleEntry.K8sRoleType
+	}
+	if request.ClusterRoleBinding && roleRefKind == "Role" {
 		return logical.ErrorResponse("a ClusterRoleBinding cannot ref a Role"), nil
 	}
 

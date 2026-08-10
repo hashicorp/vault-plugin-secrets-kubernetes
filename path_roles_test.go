@@ -85,6 +85,23 @@ func TestRoles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_type must be either 'Role' or 'ClusterRole'")
 
+		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"kubernetes_role_ref_type":      "notARoleRefType",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
+
+		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"generated_role_rules":          goodJSONRules,
+			"kubernetes_role_type":          "Role",
+			"kubernetes_role_ref_type":      "ClusterRole",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must match kubernetes_role_type when generated_role_rules is set")
+
 		resp, err = testRoleCreate(t, b, s, "badttl_tokenmax", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"service_account_name":          "test_svc_account",
@@ -141,6 +158,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  "",
 			"kubernetes_role_name":                  "existing_role",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "jsonselector",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -171,6 +189,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  "",
 			"kubernetes_role_name":                  "existing_role",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlselector",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -199,6 +218,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodJSONRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "jsonrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -229,6 +249,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodYAMLRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -253,6 +274,7 @@ func TestRoles(t *testing.T) {
 			"generated_role_rules":                  goodYAMLRules,
 			"kubernetes_role_name":                  "",
 			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "Role",
 			"name":                                  "yamlrules",
 			"name_template":                         "",
 			"service_account_name":                  "",
@@ -261,28 +283,75 @@ func TestRoles(t *testing.T) {
 			"token_default_audiences":               []string{"foobar"},
 		}, resp.Data)
 
-		// Now there should be four roles returned from list
+		// Create one where kubernetes_role_ref_type differs from kubernetes_role_type:
+		// a namespaced RoleBinding that references a ClusterRole.
+		resp, err = testRoleCreate(t, b, s, "roleref-clusterrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1"},
+			"kubernetes_role_name":          "my-cluster-role",
+			"kubernetes_role_type":          "Role",
+			"kubernetes_role_ref_type":      "ClusterRole",
+		})
+		assert.NoError(t, err)
+		assert.NoError(t, resp.Error())
+
+		resp, err = testRoleRead(t, b, s, "roleref-clusterrole")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]interface{}{
+			"allowed_kubernetes_namespaces":         []string{"app1"},
+			"allowed_kubernetes_namespace_selector": "",
+			"extra_labels":                          nilMeta,
+			"extra_annotations":                     nilMeta,
+			"generated_role_rules":                  "",
+			"kubernetes_role_name":                  "my-cluster-role",
+			"kubernetes_role_type":                  "Role",
+			"kubernetes_role_ref_type":              "ClusterRole",
+			"name":                                  "roleref-clusterrole",
+			"name_template":                         "",
+			"service_account_name":                  "",
+			"token_max_ttl":                         time.Duration(0).Seconds(),
+			"token_default_ttl":                     time.Duration(0).Seconds(),
+			"token_default_audiences":               []string(nil),
+		}, resp.Data)
+
+		// Verify case-insensitive input is normalised correctly
+		resp, err = testRoleCreate(t, b, s, "roleref-caseinsensitive", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1"},
+			"kubernetes_role_name":          "my-role",
+			"kubernetes_role_ref_type":      "clusterrole",
+		})
+		assert.NoError(t, err)
+		assert.NoError(t, resp.Error())
+
+		resp, err = testRoleRead(t, b, s, "roleref-caseinsensitive")
+		require.NoError(t, err)
+		assert.Equal(t, "ClusterRole", resp.Data["kubernetes_role_ref_type"])
+
+		// Now there should be six roles returned from list
 		resp, err = testRolesList(t, b, s)
 		require.NoError(t, err)
 		assert.Equal(t, map[string]interface{}{
-			"keys": []string{"jsonrules", "jsonselector", "yamlrules", "yamlselector"},
+			"keys": []string{"jsonrules", "jsonselector", "roleref-caseinsensitive", "roleref-clusterrole", "yamlrules", "yamlselector"},
 		}, resp.Data)
 
 		// Delete one
 		resp, err = testRolesDelete(t, b, s, "jsonrules")
 		require.NoError(t, err)
-		// Now there should be three
+		// Now there should be five
 		resp, err = testRolesList(t, b, s)
 		require.NoError(t, err)
 		assert.Equal(t, map[string]interface{}{
-			"keys": []string{"jsonselector", "yamlrules", "yamlselector"},
+			"keys": []string{"jsonselector", "roleref-caseinsensitive", "roleref-clusterrole", "yamlrules", "yamlselector"},
 		}, resp.Data)
-		// Delete the last three
+		// Delete the remaining roles
 		resp, err = testRolesDelete(t, b, s, "yamlrules")
 		require.NoError(t, err)
 		resp, err = testRolesDelete(t, b, s, "jsonselector")
 		require.NoError(t, err)
 		resp, err = testRolesDelete(t, b, s, "yamlselector")
+		require.NoError(t, err)
+		resp, err = testRolesDelete(t, b, s, "roleref-clusterrole")
+		require.NoError(t, err)
+		resp, err = testRolesDelete(t, b, s, "roleref-caseinsensitive")
 		require.NoError(t, err)
 		// Now there should be none
 		resp, err = testRolesList(t, b, s)

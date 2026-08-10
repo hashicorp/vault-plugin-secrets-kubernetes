@@ -31,6 +31,7 @@ type roleEntry struct {
 	ServiceAccountName    string            `json:"service_account_name" mapstructure:"service_account_name"`
 	K8sRoleName           string            `json:"kubernetes_role_name" mapstructure:"kubernetes_role_name"`
 	K8sRoleType           string            `json:"kubernetes_role_type" mapstructure:"kubernetes_role_type"`
+	K8sRoleRefType        string            `json:"kubernetes_role_ref_type" mapstructure:"kubernetes_role_ref_type"`
 	RoleRules             string            `json:"generated_role_rules" mapstructure:"generated_role_rules"`
 	NameTemplate          string            `json:"name_template" mapstructure:"name_template"`
 	ExtraLabels           map[string]string `json:"extra_labels" mapstructure:"extra_labels"`
@@ -110,6 +111,11 @@ func (b *backend) pathRoles() []*framework.Path {
 					Description: "Specifies whether the Kubernetes role is a Role or ClusterRole.",
 					Required:    false,
 					Default:     defaultRoleType,
+				},
+				"kubernetes_role_ref_type": {
+					Type:        framework.TypeString,
+					Description: "Specifies whether the Kubernetes role used as the RoleRef in the RoleBinding or ClusterRoleBinding is a Role or ClusterRole. If omitted, defaults to the value of kubernetes_role_type. Only relevant when kubernetes_role_name is set.",
+					Required:    false,
 				},
 				"generated_role_rules": {
 					Type:        framework.TypeString,
@@ -244,6 +250,14 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		entry.K8sRoleType = defaultRoleType
 	}
 
+	if k8sRoleRefType, ok := d.GetOk("kubernetes_role_ref_type"); ok {
+		entry.K8sRoleRefType = k8sRoleRefType.(string)
+	}
+	// Default to kubernetes_role_type if not explicitly set, for backwards compatibility
+	if entry.K8sRoleRefType == "" {
+		entry.K8sRoleRefType = entry.K8sRoleType
+	}
+
 	if roleRules, ok := d.GetOk("generated_role_rules"); ok {
 		entry.RoleRules = roleRules.(string)
 	}
@@ -273,6 +287,18 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		return logical.ErrorResponse("kubernetes_role_type must be either 'Role' or 'ClusterRole'"), nil
 	}
 	entry.K8sRoleType = casedRoleType
+
+	casedRoleRefType := makeRoleType(entry.K8sRoleRefType)
+	if casedRoleRefType != "Role" && casedRoleRefType != "ClusterRole" {
+		return logical.ErrorResponse("kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'"), nil
+	}
+	entry.K8sRoleRefType = casedRoleRefType
+
+	// When generated_role_rules is used, Vault creates the Role/ClusterRole itself and
+	// immediately binds to it. The ref kind must match the created role kind.
+	if entry.RoleRules != "" && entry.K8sRoleRefType != entry.K8sRoleType {
+		return logical.ErrorResponse("kubernetes_role_ref_type must match kubernetes_role_type when generated_role_rules is set"), nil
+	}
 
 	// Try parsing the label selector as json or yaml
 	if entry.K8sNamespaceSelector != "" {
