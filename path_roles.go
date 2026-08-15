@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/go-secure-stdlib/strutil"
 	"github.com/hashicorp/vault/sdk/framework"
+	"github.com/hashicorp/vault/sdk/helper/custommetadata"
 	"github.com/hashicorp/vault/sdk/helper/template"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/mitchellh/mapstructure"
@@ -35,6 +36,7 @@ type roleEntry struct {
 	NameTemplate          string            `json:"name_template" mapstructure:"name_template"`
 	ExtraLabels           map[string]string `json:"extra_labels" mapstructure:"extra_labels"`
 	ExtraAnnotations      map[string]string `json:"extra_annotations" mapstructure:"extra_annotations"`
+	Metadata              map[string]string `json:"metadata" mapstructure:"metadata"`
 }
 
 // HasSingleK8sNamespace returns true if the role has a single namespace specified
@@ -52,6 +54,7 @@ func (r *roleEntry) toResponseData() (map[string]interface{}, error) {
 	// Format the TTLs as seconds
 	respData["token_default_ttl"] = r.TokenDefaultTTL.Seconds()
 	respData["token_max_ttl"] = r.TokenMaxTTL.Seconds()
+	respData["metadata"] = r.Metadata
 
 	return respData, nil
 }
@@ -129,6 +132,11 @@ func (b *backend) pathRoles() []*framework.Path {
 				"extra_annotations": {
 					Type:        framework.TypeKVPairs,
 					Description: "Additional annotations to apply to all generated Kubernetes objects.",
+					Required:    false,
+				},
+				"metadata": {
+					Type:        framework.TypeMap,
+					Description: "A map of string key-value pairs to associate with the role.",
 					Required:    false,
 				},
 			},
@@ -255,6 +263,19 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 	if extraAnnotations, ok := d.GetOk("extra_annotations"); ok {
 		entry.ExtraAnnotations = extraAnnotations.(map[string]string)
+	}
+	if rawMeta, ok := d.GetOk("metadata"); ok {
+		cm, err := toStringMap(rawMeta)
+		if err != nil {
+			return logical.ErrorResponse("error parsing metadata: %s", err.Error()), nil
+		}
+		if err := custommetadata.Validate(cm); err != nil {
+			return logical.ErrorResponse(err.Error()), nil
+		}
+		entry.Metadata = cm
+	}
+	if entry.Metadata == nil {
+		entry.Metadata = make(map[string]string)
 	}
 
 	// Validate the entry
