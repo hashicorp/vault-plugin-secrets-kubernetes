@@ -313,6 +313,22 @@ func TestRoles(t *testing.T) {
 			"token_default_audiences":               []string(nil),
 		}, resp.Data)
 
+		// Partial update: update the role without sending kubernetes_role_ref_type and
+		// verify the stored ClusterRole value is preserved (not reset to kubernetes_role_type).
+		resp, err = testRoleUpdate(t, b, s, "roleref-clusterrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1"},
+			"kubernetes_role_name":          "my-cluster-role",
+			"kubernetes_role_type":          "Role",
+			// kubernetes_role_ref_type intentionally omitted
+		})
+		assert.NoError(t, err)
+		assert.NoError(t, resp.Error())
+
+		resp, err = testRoleRead(t, b, s, "roleref-clusterrole")
+		require.NoError(t, err)
+		assert.Equal(t, "ClusterRole", resp.Data["kubernetes_role_ref_type"],
+			"partial update must not reset kubernetes_role_ref_type to kubernetes_role_type")
+
 		// Verify case-insensitive input is normalised correctly
 		resp, err = testRoleCreate(t, b, s, "roleref-caseinsensitive", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1"},
@@ -365,6 +381,22 @@ func testRoleCreate(t *testing.T, b *backend, s logical.Storage, name string, d 
 
 	resp, err := b.HandleRequest(context.Background(), &logical.Request{
 		Operation: logical.CreateOperation,
+		Path:      rolesPath + name,
+		Data:      d,
+		Storage:   s,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func testRoleUpdate(t *testing.T, b *backend, s logical.Storage, name string, d map[string]interface{}) (*logical.Response, error) {
+	t.Helper()
+
+	resp, err := b.HandleRequest(context.Background(), &logical.Request{
+		Operation: logical.UpdateOperation,
 		Path:      rolesPath + name,
 		Data:      d,
 		Storage:   s,
