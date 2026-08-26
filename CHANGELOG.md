@@ -1,3 +1,9 @@
+## Unreleased
+
+### Features
+
+* Add `kubernetes_role_ref_type` parameter to decouple `roleRef` kind from role binding type, enabling the `RoleBinding` → `ClusterRole` reusable-template pattern ([#142](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/142))
+
 ## v0.13.1
 ### March 19, 2026
 
