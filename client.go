@@ -174,14 +174,8 @@ func (c *client) createRoleBinding(ctx context.Context, namespace, name, k8sRole
 			Namespace: namespace,
 		},
 	}
-	// K8sRoleRefType is empty for roles stored before this field was introduced;
-	// fall back to K8sRoleType to preserve backwards compatibility.
-	roleRefKind := vaultRole.K8sRoleRefType
-	if roleRefKind == "" {
-		roleRefKind = vaultRole.K8sRoleType
-	}
 	roleRef := rbacv1.RoleRef{
-		Kind: roleRefKind,
+		Kind: vaultRole.EffectiveRoleRefKind(),
 		Name: k8sRoleName,
 	}
 
