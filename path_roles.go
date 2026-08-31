@@ -265,6 +265,12 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 
 	if k8sRoleRefType, ok := d.GetOk("kubernetes_role_ref_type"); ok {
+		// kubernetes_role_ref_type has no effect when service_account_name is set —
+		// that path only generates a token and never constructs a RoleBinding.
+		// Mirror the exemption in path_creds.go:155 by rejecting the combination eagerly.
+		if entry.ServiceAccountName != "" {
+			return logical.ErrorResponse("kubernetes_role_ref_type has no effect when service_account_name is set"), nil
+		}
 		entry.K8sRoleRefType = k8sRoleRefType.(string)
 	}
 	// For new roles only: default kubernetes_role_ref_type to kubernetes_role_type when

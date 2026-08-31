@@ -85,13 +85,31 @@ func TestRoles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_type must be either 'Role' or 'ClusterRole'")
 
+		// invalid value — tested without service_account_name so the value check is reached
+		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"kubernetes_role_name":          "existing_role",
+			"kubernetes_role_ref_type":      "notARoleRefType",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
+
+		// service_account_name + any kubernetes_role_ref_type is always rejected regardless of the value
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"service_account_name":          "test_svc_account",
 			"kubernetes_role_ref_type":      "notARoleRefType",
 		})
 		assert.NoError(t, err)
-		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type has no effect when service_account_name is set")
+
+		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"kubernetes_role_ref_type":      "Role",
+		})
+		assert.NoError(t, err)
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type has no effect when service_account_name is set")
 
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
@@ -522,3 +540,24 @@ const (
 	- patch
 `
 )
+
+// TestEffectiveRoleRefKind covers the backwards-compatibility fallback in
+// roleEntry.EffectiveRoleRefKind: when K8sRoleRefType is empty (a role stored
+// before this field was introduced) the method must fall back to K8sRoleType.
+func TestEffectiveRoleRefKind(t *testing.T) {
+	t.Run("falls back to K8sRoleType when K8sRoleRefType is empty", func(t *testing.T) {
+		r := &roleEntry{K8sRoleType: "ClusterRole", K8sRoleRefType: ""}
+		assert.Equal(t, "ClusterRole", r.EffectiveRoleRefKind())
+
+		r2 := &roleEntry{K8sRoleType: "Role", K8sRoleRefType: ""}
+		assert.Equal(t, "Role", r2.EffectiveRoleRefKind())
+	})
+
+	t.Run("returns K8sRoleRefType when explicitly set, ignoring K8sRoleType", func(t *testing.T) {
+		r := &roleEntry{K8sRoleType: "Role", K8sRoleRefType: "ClusterRole"}
+		assert.Equal(t, "ClusterRole", r.EffectiveRoleRefKind())
+
+		r2 := &roleEntry{K8sRoleType: "ClusterRole", K8sRoleRefType: "Role"}
+		assert.Equal(t, "Role", r2.EffectiveRoleRefKind())
+	})
+}
