@@ -31,6 +31,7 @@ type roleEntry struct {
 	ServiceAccountName    string            `json:"service_account_name" mapstructure:"service_account_name"`
 	K8sRoleName           string            `json:"kubernetes_role_name" mapstructure:"kubernetes_role_name"`
 	K8sRoleType           string            `json:"kubernetes_role_type" mapstructure:"kubernetes_role_type"`
+	K8sRoleRefType        string            `json:"kubernetes_role_ref_type" mapstructure:"kubernetes_role_ref_type"`
 	RoleRules             string            `json:"generated_role_rules" mapstructure:"generated_role_rules"`
 	NameTemplate          string            `json:"name_template" mapstructure:"name_template"`
 	ExtraLabels           map[string]string `json:"extra_labels" mapstructure:"extra_labels"`
@@ -42,6 +43,19 @@ type roleEntry struct {
 func (r *roleEntry) HasSingleK8sNamespace() bool {
 	return r.K8sNamespaceSelector == "" &&
 		len(r.K8sNamespaces) == 1 && r.K8sNamespaces[0] != "" && r.K8sNamespaces[0] != "*"
+}
+
+// EffectiveRoleRefKind returns the roleRef kind to use when constructing a
+// RoleBinding or ClusterRoleBinding. K8sRoleRefType is the authoritative value;
+// when empty (roles stored before this field was introduced) it falls back to
+// K8sRoleType, preserving backwards-compatible behaviour.
+// NOTE: both path_creds.go and client.go must use this method — do not inline
+// the fallback logic in either place.
+func (r *roleEntry) EffectiveRoleRefKind() string {
+	if r.K8sRoleRefType != "" {
+		return r.K8sRoleRefType
+	}
+	return r.K8sRoleType
 }
 
 func (r *roleEntry) toResponseData() (map[string]interface{}, error) {
@@ -110,6 +124,11 @@ func (b *backend) pathRoles() []*framework.Path {
 					Description: "Specifies whether the Kubernetes role is a Role or ClusterRole.",
 					Required:    false,
 					Default:     defaultRoleType,
+				},
+				"kubernetes_role_ref_type": {
+					Type:        framework.TypeString,
+					Description: "Specifies whether the Kubernetes role used as the RoleRef in the RoleBinding or ClusterRoleBinding is a Role or ClusterRole. Accepted values: 'Role', 'ClusterRole' (case-insensitive). If omitted, defaults to the value of kubernetes_role_type. Only relevant when kubernetes_role_name is set; has no effect when service_account_name or generated_role_rules is used. Note: setting this to 'Role' while requesting credentials with cluster_role_binding=true is invalid and will be rejected at credential-generation time.",
+					Required:    false,
 				},
 				"generated_role_rules": {
 					Type:        framework.TypeString,
@@ -208,7 +227,8 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		return nil, err
 	}
 
-	if entry == nil {
+	isNew := entry == nil
+	if isNew {
 		entry = &roleEntry{
 			Name: name,
 		}
@@ -237,11 +257,35 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		entry.K8sRoleName = k8sRoleName.(string)
 	}
 
+	var warnings []string
+
 	if k8sRoleType, ok := d.GetOk("kubernetes_role_type"); ok {
 		entry.K8sRoleType = k8sRoleType.(string)
+		// kubernetes_role_type has no effect when service_account_name is set —
+		// that path only generates a token and never constructs a RoleBinding.
+		if entry.ServiceAccountName != "" {
+			warnings = append(warnings, "kubernetes_role_type has no effect when service_account_name is set")
+		}
 	}
 	if entry.K8sRoleType == "" {
 		entry.K8sRoleType = defaultRoleType
+	}
+
+	if k8sRoleRefType, ok := d.GetOk("kubernetes_role_ref_type"); ok {
+		entry.K8sRoleRefType = k8sRoleRefType.(string)
+		// kubernetes_role_ref_type has no effect when service_account_name is set —
+		// that path only generates a token and never constructs a RoleBinding.
+		if entry.ServiceAccountName != "" {
+			warnings = append(warnings, "kubernetes_role_ref_type has no effect when service_account_name is set")
+		}
+	}
+	// For new roles only: default kubernetes_role_ref_type to kubernetes_role_type when
+	// omitted. For existing roles, the stored value is preserved as-is — the runtime
+	// fallback in EffectiveRoleRefKind() handles the empty-string case for roles written
+	// before this field was introduced, so we must not silently overwrite them on every
+	// partial update.
+	if isNew && entry.K8sRoleRefType == "" {
+		entry.K8sRoleRefType = entry.K8sRoleType
 	}
 
 	if roleRules, ok := d.GetOk("generated_role_rules"); ok {
@@ -274,6 +318,26 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 	}
 	entry.K8sRoleType = casedRoleType
 
+	// Only validate and normalise K8sRoleRefType when it was explicitly provided.
+	// An empty value here means a pre-existing role that predates the field; EffectiveRoleRefKind()
+	// handles the empty case at runtime, so we must not reject or overwrite it.
+	if entry.K8sRoleRefType != "" {
+		casedRoleRefType := makeRoleType(entry.K8sRoleRefType)
+		if casedRoleRefType != "Role" && casedRoleRefType != "ClusterRole" {
+			return logical.ErrorResponse("kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'"), nil
+		}
+		entry.K8sRoleRefType = casedRoleRefType
+	}
+
+	// When generated_role_rules is used, Vault creates the Role/ClusterRole itself and
+	// immediately binds to it. The ref kind must match the created role kind.
+	// Only enforce when K8sRoleRefType was explicitly provided — an empty value means a
+	// legacy role predating this field; EffectiveRoleRefKind() resolves it correctly at
+	// runtime and will always return K8sRoleType in that case (safe by definition).
+	if entry.RoleRules != "" && entry.K8sRoleRefType != "" && entry.K8sRoleRefType != entry.K8sRoleType {
+		return logical.ErrorResponse("kubernetes_role_ref_type must match kubernetes_role_type when generated_role_rules is set"), nil
+	}
+
 	// Try parsing the label selector as json or yaml
 	if entry.K8sNamespaceSelector != "" {
 		if _, err := makeLabelSelector(entry.K8sNamespaceSelector); err != nil {
@@ -300,6 +364,10 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 	if err := setRole(ctx, req.Storage, name, entry); err != nil {
 		return nil, err
+	}
+
+	if len(warnings) > 0 {
+		return &logical.Response{Warnings: warnings}, nil
 	}
 
 	return nil, nil
