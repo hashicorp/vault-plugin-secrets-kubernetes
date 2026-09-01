@@ -257,22 +257,27 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 		entry.K8sRoleName = k8sRoleName.(string)
 	}
 
+	var warnings []string
+
 	if k8sRoleType, ok := d.GetOk("kubernetes_role_type"); ok {
 		entry.K8sRoleType = k8sRoleType.(string)
+		// kubernetes_role_type has no effect when service_account_name is set —
+		// that path only generates a token and never constructs a RoleBinding.
+		if entry.ServiceAccountName != "" {
+			warnings = append(warnings, "kubernetes_role_type has no effect when service_account_name is set")
+		}
 	}
 	if entry.K8sRoleType == "" {
 		entry.K8sRoleType = defaultRoleType
 	}
 
 	if k8sRoleRefType, ok := d.GetOk("kubernetes_role_ref_type"); ok {
+		entry.K8sRoleRefType = k8sRoleRefType.(string)
 		// kubernetes_role_ref_type has no effect when service_account_name is set —
 		// that path only generates a token and never constructs a RoleBinding.
-		// Mirror the exemption in path_creds.go (the cluster_role_binding + ServiceAccountName
-		// guard in createCreds) by rejecting the combination eagerly.
 		if entry.ServiceAccountName != "" {
-			return logical.ErrorResponse("kubernetes_role_ref_type has no effect when service_account_name is set"), nil
+			warnings = append(warnings, "kubernetes_role_ref_type has no effect when service_account_name is set")
 		}
-		entry.K8sRoleRefType = k8sRoleRefType.(string)
 	}
 	// For new roles only: default kubernetes_role_ref_type to kubernetes_role_type when
 	// omitted. For existing roles, the stored value is preserved as-is — the runtime
@@ -359,6 +364,10 @@ func (b *backend) pathRolesWrite(ctx context.Context, req *logical.Request, d *f
 
 	if err := setRole(ctx, req.Storage, name, entry); err != nil {
 		return nil, err
+	}
+
+	if len(warnings) > 0 {
+		return &logical.Response{Warnings: warnings}, nil
 	}
 
 	return nil, nil

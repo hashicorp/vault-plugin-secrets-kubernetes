@@ -94,22 +94,28 @@ func TestRoles(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
 
-		// service_account_name + any kubernetes_role_ref_type is always rejected regardless of the value
+		// service_account_name + invalid kubernetes_role_ref_type: still rejected by value validation
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"service_account_name":          "test_svc_account",
 			"kubernetes_role_ref_type":      "notARoleRefType",
 		})
 		assert.NoError(t, err)
-		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type has no effect when service_account_name is set")
+		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must be either 'Role' or 'ClusterRole'")
 
-		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
+		// service_account_name + valid kubernetes_role_ref_type: role is saved but a warning is emitted
+		resp, err = testRoleCreate(t, b, s, "warn-role-ref-type", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
 			"service_account_name":          "test_svc_account",
 			"kubernetes_role_ref_type":      "Role",
 		})
-		assert.NoError(t, err)
-		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type has no effect when service_account_name is set")
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.NoError(t, resp.Error(), "role should be saved, not rejected")
+		assert.Contains(t, resp.Warnings, "kubernetes_role_ref_type has no effect when service_account_name is set")
+		// Clean up so this role does not leak into the full_role_crud list assertions.
+		_, err = testRolesDelete(t, b, s, "warn-role-ref-type")
+		require.NoError(t, err)
 
 		resp, err = testRoleCreate(t, b, s, "badrole", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
@@ -119,6 +125,20 @@ func TestRoles(t *testing.T) {
 		})
 		assert.NoError(t, err)
 		assert.EqualError(t, resp.Error(), "kubernetes_role_ref_type must match kubernetes_role_type when generated_role_rules is set")
+
+		// service_account_name + a valid kubernetes_role_type: role is saved but a warning is emitted
+		resp, err = testRoleCreate(t, b, s, "warn-role-type", map[string]interface{}{
+			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
+			"service_account_name":          "test_svc_account",
+			"kubernetes_role_type":          "ClusterRole",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		assert.NoError(t, resp.Error(), "role should be saved, not rejected")
+		assert.Contains(t, resp.Warnings, "kubernetes_role_type has no effect when service_account_name is set")
+		// Clean up so this role does not leak into the full_role_crud list assertions.
+		_, err = testRolesDelete(t, b, s, "warn-role-type")
+		require.NoError(t, err)
 
 		resp, err = testRoleCreate(t, b, s, "badttl_tokenmax", map[string]interface{}{
 			"allowed_kubernetes_namespaces": []string{"app1", "app2"},
