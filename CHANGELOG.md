@@ -2,12 +2,11 @@
 ### September 18, 2026
 
 * chore: automated Go/dependency update via vault-plugin-release (#145)
-* feat: add kubernetes_role_ref_type parameter to decouple roleRef kind from role binding type (#142)
 * bump up golang.org/x/crypto to v0.54.0 (#141)
 * Bump github.com/go-jose/go-jose/v4 from 4.1.3 to 4.1.4 (#129)
 * Update changelog for v0.13.1 release (#127)
 * Update changelog for v0.13.0 release (#124)
-* Add `kubernetes_role_ref_type` parameter to decouple `roleRef` kind from role binding type, enabling the `RoleBinding` → `ClusterRole` reusable-template pattern ([#142](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/142))
+* feat: add `kubernetes_role_ref_type` parameter to decouple `roleRef` kind from role binding type, enabling the `RoleBinding` → `ClusterRole` reusable-template pattern ([#142](https://github.com/hashicorp/vault-plugin-secrets-kubernetes/pull/142))
 
 ## v0.13.1
 ### March 19, 2026
