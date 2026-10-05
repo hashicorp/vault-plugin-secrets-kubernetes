@@ -1,4 +1,4 @@
-# Copyright IBM Corp. 2022, 2025
+# Copyright IBM Corp. 2022, 2026
 # SPDX-License-Identifier: MPL-2.0
 
 FROM docker.mirror.hashicorp.services/hashicorp/vault-enterprise:1.19.0-ent as enterprise
