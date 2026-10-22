@@ -1,6 +1,6 @@
 module github.com/hashicorp/vault-plugin-secrets-kubernetes
 
-go 1.27.3
+go 1.26.1
 
 require (
 	github.com/cenkalti/backoff/v3 v3.2.2
