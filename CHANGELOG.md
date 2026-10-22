@@ -1,3 +1,9 @@
+## v0.14.1
+### October 22, 2026
+
+* Upgrade deps (#149)
+* [CHANGELOG] Prepare for v0.14.0 release (#148)
+
 ## v0.14.0
 ### September 18, 2026
 
