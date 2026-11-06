@@ -39,6 +39,8 @@ type backend struct {
 	*framework.Backend
 	lock   sync.Mutex
 	client *client
+	// clientJWT is the token used to construct the cached Kubernetes client.
+	clientJWT string
 
 	// localSATokenReader caches the service account token in memory.
 	// It periodically reloads the token to support token rotation/renewal.
@@ -127,6 +129,7 @@ func (b *backend) reset() {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 	b.client = nil
+	b.clientJWT = ""
 }
 
 const backendHelp = `
