@@ -377,24 +377,22 @@ func (b *backend) getClient(ctx context.Context, s logical.Storage) (*client, er
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	client := b.client
-	if client != nil {
-		return client, nil
-	}
-
 	config, err := b.configWithDynamicValues(ctx, s)
 	if err != nil {
 		return nil, err
 	}
 
-	if b.client == nil && config == nil {
-		config = new(kubeConfig)
+	// Resolve the local JWT before checking the client cache so projected
+	// service account token rotations are picked up by the file reader.
+	if b.client != nil && b.clientJWT == config.ServiceAccountJwt {
+		return b.client, nil
 	}
 
 	b.client, err = newClient(config)
 	if err != nil {
 		return nil, err
 	}
+	b.clientJWT = config.ServiceAccountJwt
 
 	return b.client, nil
 }
